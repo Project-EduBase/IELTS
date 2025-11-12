@@ -3,230 +3,621 @@
 {% block title %}Mening Urinishlarim - EduBase{% endblock %}
 
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-    /* Custom light/dark mode classes for this page */
-    .light .bg-card {
-        background-color: #FFFFFF;
+    /* Shadcn/ui inspired design tokens */
+    :root {
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 3.9%;
+        --muted: 0 0% 96.1%;
+        --muted-foreground: 0 0% 45.1%;
+        --border: 0 0% 89.8%;
+        --primary: 0 0% 9%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 0 0% 96.1%;
+        --secondary-foreground: 0 0% 9%;
     }
-    .dark .bg-card {
-        background-color: #1A1A1A;
+
+    .dark {
+        --card: 0 0% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --muted: 0 0% 14.9%;
+        --muted-foreground: 0 0% 63.9%;
+        --border: 0 0% 14.9%;
+        --primary: 0 0% 98%;
+        --primary-foreground: 0 0% 9%;
+        --secondary: 0 0% 14.9%;
+        --secondary-foreground: 0 0% 98%;
     }
-    .light .border-card {
-        border-color: #E0E0E0;
+
+    /* Card styles */
+    .card {
+        background-color: hsl(var(--card));
+        color: hsl(var(--card-foreground));
+        border: 1px solid hsl(var(--border));
     }
-    .dark .border-card {
-        border-color: #333333;
+
+    .card-hover {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .light .text-on-card {
-        color: #000000;
+
+    .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
-    .dark .text-on-card {
-        color: #FFFFFF;
+
+    /* Text styles */
+    .text-card {
+        color: hsl(var(--card-foreground));
     }
-    .light .text-subtle {
-        color: #555555;
+
+    .text-muted {
+        color: hsl(var(--muted-foreground));
     }
-    .dark .text-subtle {
-        color: #AAAAAA;
+
+    /* Button styles */
+    .btn-filter {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border: 1px solid hsl(var(--border));
+        background-color: hsl(var(--card));
+        color: hsl(var(--muted-foreground));
+        transition: all 0.2s ease;
+        cursor: pointer;
     }
-    /* Buttons colors */
-    .btn-active {
-        background-color: #000000;
-        color: #FFFFFF;
-        border-color: #000000;
+
+    .btn-filter.active {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        border-color: hsl(var(--primary));
     }
-    .dark .btn-active {
-        background-color: #FFFFFF;
-        color: #000000;
-        border-color: #FFFFFF;
+
+    .btn-filter:hover:not(.active) {
+        background-color: hsl(var(--muted));
+        color: hsl(var(--card-foreground));
     }
-    .btn-inactive {
-        background-color: #FFFFFF;
-        color: #555555;
-        border-color: #E0E0E0;
+
+    .btn-primary {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
     }
-    .dark .btn-inactive {
-        background-color: #1A1A1A;
-        color: #AAAAAA;
-        border-color: #333333;
+
+    .btn-primary:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
     }
-    .btn-inactive:hover {
-        background-color: #F7F7F7;
+
+    /* Badge styles */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
     }
-    .dark .btn-inactive:hover {
-        background-color: #222222;
+
+    .badge-completed {
+        background-color: hsl(142 76% 36% / 0.1);
+        color: hsl(142 76% 36%);
+    }
+
+    .badge-submitted {
+        background-color: hsl(217 91% 60% / 0.1);
+        color: hsl(217 91% 60%);
+    }
+
+    .badge-in-progress {
+        background-color: hsl(45 93% 47% / 0.1);
+        color: hsl(45 93% 47%);
+    }
+
+    .badge-section {
+        background-color: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Stats grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    @media (min-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    .stat-card {
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        background-color: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: hsl(var(--card-foreground));
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+        margin-top: 0.5rem;
+    }
+
+    /* Chart containers */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    @media (min-width: 1024px) {
+        .charts-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    .chart-card {
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        background-color: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+    }
+
+    .chart-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: hsl(var(--card-foreground));
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+
+    /* Progress bars */
+    .progress-section {
+        margin-bottom: 2rem;
+    }
+
+    .progress-item {
+        margin-bottom: 1rem;
+    }
+
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 0.5rem;
+        background-color: hsl(var(--muted));
+        border-radius: 9999px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        border-radius: 9999px;
+        transition: width 0.3s ease;
+    }
+
+    .progress-reading { background-color: hsl(217 91% 60%); }
+    .progress-listening { background-color: hsl(142 76% 36%); }
+    .progress-writing { background-color: hsl(45 93% 47%); }
+    .progress-speaking { background-color: hsl(345 83% 41%); }
+
+    /* Animations */
+    .fade-in {
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .stagger-animation > * {
+        opacity: 0;
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    .stagger-animation > *:nth-child(1) { animation-delay: 0.1s; }
+    .stagger-animation > *:nth-child(2) { animation-delay: 0.2s; }
+    .stagger-animation > *:nth-child(3) { animation-delay: 0.3s; }
+    .stagger-animation > *:nth-child(4) { animation-delay: 0.4s; }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+
+    .empty-state-icon {
+        width: 4rem;
+        height: 4rem;
+        margin: 0 auto 1rem;
+        border-radius: 1rem;
+        background-color: hsl(var(--muted));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: hsl(var(--muted-foreground));
+    }
+
+
+    #dashboardLoadingScreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    #dashboardLoadingScreen.hidden {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .spinner-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+    }
+
+    /* Advanced Spinner */
+    .advanced-spinner {
+        width: 68px;
+        height: 68px;
+        display: inline-block;
+        position: relative;
+    }
+
+    .advanced-spinner::after,
+    .advanced-spinner::before {
+        content: '';  
+        box-sizing: border-box;
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        border: 3px solid hsl(var(--primary));
+        border-top-color: transparent;
+        border-right-color: transparent;
+        position: absolute;
+        left: 0;
+        top: 0;
+        animation: animloader 1.2s linear infinite;
+    }
+
+    .advanced-spinner::before {
+        animation-delay: 0s;
+        border-color: hsl(var(--primary));
+        border-right-color: transparent;
+        border-bottom-color: transparent;
+    }
+
+    .advanced-spinner::after {
+        animation-delay: 0.6s;
+        border-color: hsl(var(--primary) / 0.5);
+        border-left-color: transparent;
+        border-bottom-color: transparent;
+    }
+
+    @keyframes animloader {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }   
+
+    .loading-text {
+        text-align: center;
+    }
+
+    .loading-text h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 0.25rem;
+    }
+
+    .loading-text p {
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Skeleton Loader */
+    .skeleton {
+        background: linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--border)) 50%, hsl(var(--muted)) 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 0.5rem;
+    }
+
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    .skeleton-stat {
+        height: 120px;
+        border-radius: 1rem;
+    }
+
+    .skeleton-card {
+        height: 200px;
+        border-radius: 1rem;
+    }
+
+    .skeleton-item {
+        height: 60px;
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
     }
 </style>
-<div class="py-6">
-    <div class="px-4 sm:px-0">
-        <h1 class="text-3xl font-bold text-text-on-card">Mening Urinishlarim</h1>
-        <p class="mt-2 text-subtle">Barcha test urinishlaringiz tarixi</p>
+
+<div id="dashboardLoadingScreen">
+    <div class="loading-container">
+        <div class="spinner-wrapper">
+            <div class="advanced-spinner"></div>
+        </div>
+        <div class="loading-text">
+            <h3>Ma'lumotlar yuklanmoqda</h3>
+            <p>Bir oz kutib turing...</p>
+        </div>
+    </div>
+</div>
+
+<div class="space-y-8 fade-in">
+    <!-- Header Section -->
+    <div class="space-y-2">
+        <h1 class="text-3xl font-bold tracking-tight text-card">Mening Urinishlarim</h1>
+        <p class="text-muted">Barcha test urinishlaringiz tarixi va statistikasi</p>
     </div>
 
-    <div class="mt-6 flex flex-wrap gap-2">
-        <button onclick="filterAttempts('all', event)" id="filter-all"
-            class="filter-btn px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 btn-active">
+    <!-- Statistics Section -->
+    {% if attempts %}
+    <div class="space-y-6">
+        <!-- Stats Overview -->
+        <div class="stats-grid stagger-animation">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_attempts }}</div>
+                <div class="stat-label">Jami Urinishlar</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ completed_attempts }}</div>
+                <div class="stat-label">Bajarilgan</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ avg_score }}</div>
+                <div class="stat-label">O'rtacha Ball</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ success_rate }}%</div>
+                <div class="stat-label">Muvaffaqiyat Darajasi</div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-grid">
+            <!-- Performance Chart -->
+            <div class="chart-card">
+                <h3 class="chart-title">Bo'limlar bo'yicha natijalar</h3>
+                <div class="chart-container">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Progress Chart -->
+            <div class="chart-card">
+                <h3 class="chart-title">Oylik progress</h3>
+                <div class="chart-container">
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress by Section -->
+        <div class="card rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-card mb-4">Bo'limlar bo'yicha progress</h3>
+            <div class="space-y-4">
+                {% for section_data in section_progress %}
+                <div class="progress-item">
+                    <div class="progress-header">
+                        <span class="text-sm font-medium text-card">{{ section_data.section_name }}</span>
+                        <span class="text-sm text-muted">{{ section_data.percentage }}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-{{ section_data.section_type|default:'unknown' }}"
+                            style="width: {{ section_data.percentage|default:'0' }}%">
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-xs text-muted mt-1">
+                        <span>{{ section_data.completed_count }} ta bajarilgan</span>
+                        <span>{{ section_data.total_count }} ta test</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filters -->
+    <div class="flex flex-wrap gap-2">
+        <button onclick="filterAttempts('all', this)" class="btn-filter active">
             Barchasi
         </button>
-        <button onclick="filterAttempts('completed', event)" id="filter-completed"
-            class="filter-btn px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 btn-inactive">
+        <button onclick="filterAttempts('completed', this)" class="btn-filter">
             Bajarilgan
         </button>
-        <button onclick="filterAttempts('submitted', event)" id="filter-submitted"
-            class="filter-btn px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 btn-inactive">
+        <button onclick="filterAttempts('submitted', this)" class="btn-filter">
             Yuborilgan
+        </button>
+        <button onclick="filterAttempts('in_progress', this)" class="btn-filter">
+            Jarayonda
         </button>
     </div>
 
+    <!-- Attempts Grid -->
     <div id="attempts-container">
         {% if attempts %}
-        <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" id="attempts-grid">
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 stagger-animation" id="attempts-grid">
             {% for attempt in attempts %}
-            <div
-                class="attempt-card bg-card border border-card rounded-xl p-6 hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
-                data-status="{{ attempt.status }}">
+            <div class="attempt-card card rounded-xl p-6 card-hover" 
+                 data-status="{{ attempt.status }}" 
+                 data-section="{{ attempt.exam.section_type }}">
+
+                <!-- Header -->
                 <div class="flex items-start justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-text-on-card line-clamp-2">{{ attempt.exam.title }}</h3>
-                    <span class="status-badge ml-2 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                        {% if attempt.status == 'completed' %}Bajarilgan
-                        {% elif attempt.status == 'submitted' %}Yuborilgan
-                        {% elif attempt.status == 'in_progress' %}Jarayonda
-                        {% else %}{{ attempt.status }}{% endif %}
-                    </span>
+                    <h3 class="text-lg font-semibold text-card line-clamp-2 flex-1 pr-2">
+                        {{ attempt.exam.title }}
+                    </h3>
+                    <div class="flex flex-col items-end gap-2 shrink-0">
+                        {% if attempt.status == 'completed' %}
+                        <span class="badge badge-completed">Bajarilgan</span>
+                        {% elif attempt.status == 'submitted' %}
+                        <span class="badge badge-submitted">Yuborilgan</span>
+                        {% else %}
+                        <span class="badge badge-in-progress">Jarayonda</span>
+                        {% endif %}
+                        <span class="badge badge-section">
+                            {{ attempt.exam.get_section_type_display }}
+                        </span>
+                    </div>
                 </div>
 
+                <!-- Stats -->
                 <div class="space-y-3 mb-6">
-                    <div class="flex items-center text-sm text-subtle">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
-                            </path>
-                        </svg>
-                        {% if attempt.exam.section_type == 'reading' %}Reading
-                        {% elif attempt.exam.section_type == 'listening' %}Listening
-                        {% elif attempt.exam.section_type == 'writing' %}Writing
-                        {% elif attempt.exam.section_type == 'speaking' %}Speaking
-                        {% else %}{{ attempt.exam.section_type|title }}{% endif %}
-                    </div>
-
+                    <!-- Score and Results -->
                     {% if attempt.total_score %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-card">Umumiy ball:</span>
+                        <span class="text-lg font-bold text-card">{{ attempt.total_score }}</span>
+                    </div>
+                    
                     {% if attempt.exam.section_type == "reading" or attempt.exam.section_type == "listening" %}
-                    <div class="flex flex-col text-sm text-subtle">
-                        <div class="flex items-center">
-                            <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5 13l4 4L19 7" />
-                            </svg>
-                            To‘g‘ri: <span class="ml-1 font-medium text-green-600">{{ attempt.correct_count|default:"0" }}</span>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="flex items-center gap-2 text-green-600">
+                            <i class="fas fa-check w-4 h-4"></i>
+                            <span>{{ attempt.correct_count|default:"0" }} to'g'ri</span>
                         </div>
-                        <div class="flex items-center mt-1">
-                            <svg class="w-4 h-4 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                            Noto‘g‘ri: <span class="ml-1 font-medium text-red-600">{{ attempt.incorrect_count|default:"0" }}</span>
+                        <div class="flex items-center gap-2 text-red-600">
+                            <i class="fas fa-times w-4 h-4"></i>
+                            <span>{{ attempt.incorrect_count|default:"0" }} noto'g'ri</span>
                         </div>
                     </div>
-                     {% endif %}
-
+                    {% endif %}
                     {% endif %}
 
-                    <div class="flex items-center text-sm text-subtle">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Boshlangan: {{ attempt.created_at|date:"d.m.Y H:i" }}
+                    <!-- Dates -->
+                    <div class="space-y-2 text-sm text-muted">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-clock w-4 h-4"></i>
+                            <span>Boshlangan: {{ attempt.created_at|date:"d.m.Y H:i" }}</span>
+                        </div>
+                        {% if attempt.submitted_at %}
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-paper-plane w-4 h-4"></i>
+                            <span>Yuborilgan: {{ attempt.submitted_at|date:"d.m.Y H:i" }}</span>
+                        </div>
+                        {% endif %}
+                        {% if attempt.completed_at %}
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-check-circle w-4 h-4"></i>
+                            <span>Bajarilgan: {{ attempt.completed_at|date:"d.m.Y H:i" }}</span>
+                        </div>
+                        {% endif %}
                     </div>
-
-                    {% if attempt.submitted_at %}
-                    <div class="flex items-center text-sm text-subtle">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                        </svg>
-                        Yuborilgan: {{ attempt.submitted_at|date:"d.m.Y H:i" }}
-                    </div>
-                    {% endif %}
-
-                    {% if attempt.completed_at %}
-                    <div class="flex items-center text-sm text-subtle">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Bajarilgan: {{ attempt.completed_at|date:"d.m.Y H:i" }}
-                    </div>
-                    {% endif %}
                 </div>
 
-                <div class="flex justify-between items-center">
+                <!-- Actions -->
+                <div class="flex justify-between items-center pt-4 border-t border-border">
                     {% if attempt.status == 'in_progress' %}
-                    <a href="{% url 'take_exam' attempt.exam.id %}"
-                        class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-black text-white hover:bg-gray-800 transition-colors duration-200 dark:bg-white dark:text-black dark:hover:bg-gray-200">
+                    <a href="{% url 'take_exam' attempt.exam.id %}" 
+                       class="btn-primary inline-flex items-center gap-2">
+                        <i class="fas fa-play w-3 h-3"></i>
                         Davom etish
                     </a>
                     {% elif attempt.status == 'completed' %}
-                    <span
-                        class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
-                        Bajarilgan
-                    </span>
+                    <span class="text-sm text-muted">Bajarilgan</span>
                     {% if attempt.exam.section_type == "reading" or attempt.exam.section_type == "listening" %}
-                    <div class="flex justify-between items-center">
-                        <a href="{% url 'attempt_detail' attempt.id %}"
-                        class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-black text-white hover:bg-gray-800 transition-colors duration-200 dark:bg-white dark:text-black dark:hover:bg-gray-200">
-                            Batafsil ko‘rish
-                        </a>
-                    </div>
-                    {% endif %}
-                    {% if attempt.total_score %}
-                    <span
-                        class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                        ✓ Baholangan
-                    </span>
+                    <a href="{% url 'attempts:attempt_detail' attempt.id %}" 
+                       class="btn-primary inline-flex items-center gap-2">
+                        <i class="fas fa-chart-bar w-3 h-3"></i>
+                        Tahlil
+                    </a>
                     {% endif %}
                     {% elif attempt.status == 'submitted' %}
-                    <span
-                        class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
-                        Baholash kutilmoqda
-                    </span>
+                    <span class="text-sm text-muted">Baholash kutilmoqda</span>
                     {% endif %}
                 </div>
             </div>
             {% endfor %}
         </div>
 
-        <div class="mt-8 flex items-center justify-between" id="pagination-container">
-            <div class="flex items-center text-sm text-subtle">
-                <span id="pagination-info">1-10 dan 25 ta ko'rsatilmoqda</span>
-            </div>
-            <div class="flex items-center space-x-2">
-                <button id="prev-page" onclick="changePage(-1)"
-                    class="px-3 py-2 text-sm font-medium rounded-lg border border-card bg-card text-subtle hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                    disabled>
-                    Oldingi
-                </button>
-                <div id="page-numbers" class="flex items-center space-x-1">
-                    </div>
-                <button id="next-page" onclick="changePage(1)"
-                    class="px-3 py-2 text-sm font-medium rounded-lg border border-card bg-card text-subtle hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
-                    Keyingi
-                </button>
+        <!-- Pagination -->
+        <div class="mt-8 flex items-center justify-between">
+            <div class="text-sm text-muted">
+                <span id="pagination-info">1-{{ attempts|length }} dan {{ attempts|length }} ta ko'rsatilmoqda</span>
             </div>
         </div>
         {% else %}
-        <div class="mt-8 bg-card border border-card rounded-xl overflow-hidden">
-            <div class="px-6 py-12 text-center">
-                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4">
-                    </path>
-                </svg>
-                <h3 class="text-lg font-medium text-text-on-card mb-2">Siz hali hech qanday imtihon topshirmagansiz</h3>
-                <p class="text-subtle mb-4">Mavjud imtihonlarni ko'rish uchun imtihonlar sahifasiga o'ting.</p>
-                <a href="{% url 'exam_list' %}"
-                    class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-black text-white hover:bg-gray-800 transition-colors duration-200 dark:bg-white dark:text-black dark:hover:bg-gray-200">
+        <!-- Empty State -->
+        <div class="card rounded-xl">
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-clipboard-list text-xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-card mb-2">Siz hali hech qanday imtihon topshirmagansiz</h3>
+                <p class="text-muted mb-6">Mavjud imtihonlarni ko'rish uchun imtihonlar sahifasiga o'ting.</p>
+                <a href="{% url 'exam_list' %}" class="btn-primary inline-flex items-center gap-2">
+                    <i class="fas fa-book-open w-4 h-4"></i>
                     Imtihonlarni ko'rish
                 </a>
             </div>
@@ -234,16 +625,16 @@
         {% endif %}
     </div>
 
-    <div id="no-results"
-        class="hidden mt-8 bg-card border border-card rounded-xl overflow-hidden">
-        <div class="px-6 py-12 text-center">
-            <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor"
-                viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
-            <h3 class="text-lg font-medium text-text-on-card mb-2">Hech narsa topilmadi</h3>
-            <p class="text-subtle">Tanlangan filtr bo'yicha hech qanday urinish topilmadi.</p>
+    <!-- No Results State -->
+    <div id="no-results" class="hidden">
+        <div class="card rounded-xl">
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-search text-xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-card mb-2">Hech narsa topilmadi</h3>
+                <p class="text-muted">Tanlangan filtr bo'yicha hech qanday urinish topilmadi.</p>
+            </div>
         </div>
     </div>
 </div>
@@ -251,27 +642,167 @@
 <script>
     let currentFilter = 'all';
     let currentPage = 1;
-    const itemsPerPage = 10;
+    const itemsPerPage = 9;
     let allAttempts = [];
 
     document.addEventListener('DOMContentLoaded', function () {
+        // Loading bo'limini ko'rsatish
+        const loadingScreen = document.getElementById('dashboardLoadingScreen');
+        const mainContent = document.querySelector('.space-y-8');
+        
+        function hideLoadingScreen() {
+            if (loadingScreen) {
+                loadingScreen.classList.add('hidden');
+            }
+            if (mainContent) {
+                mainContent.style.opacity = '1';
+                mainContent.style.visibility = 'visible';
+            }
+        }
+
+        // Tasvirlar yuklanmaguncha kuting
+        let totalImages = 0;
+        let loadedImages = 0;
+
+        const images = document.querySelectorAll('img');
+        totalImages = images.length;
+
+        if (totalImages === 0) {
+            setTimeout(hideLoadingScreen, 300);
+        } else {
+            images.forEach(img => {
+                img.addEventListener('load', () => {
+                    loadedImages++;
+                    if (loadedImages === totalImages) {
+                        hideLoadingScreen();
+                    }
+                });
+                img.addEventListener('error', () => {
+                    loadedImages++;
+                    if (loadedImages === totalImages) {
+                        hideLoadingScreen();
+                    }
+                });
+            });
+        }
+
+        // Window load event
+        window.addEventListener('load', hideLoadingScreen);
+
+        // Maksimal 2 soniyadan keyin loading yoq bo'lsin
+        setTimeout(hideLoadingScreen, 2000);
+
+        // Original script
         const attemptCards = document.querySelectorAll('.attempt-card');
         allAttempts = Array.from(attemptCards);
         updatePagination();
+        
+        // Initialize charts if attempts exist
+        if (allAttempts.length > 0) {
+            initializeCharts();
+            animateProgressBars();
+        }
     });
 
-    function filterAttempts(status, event) {
+    function initializeCharts() {
+        // Performance Chart - Section-wise scores
+        const performanceCtx = document.getElementById('performanceChart')?.getContext('2d');
+        if (performanceCtx) {
+            new Chart(performanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Reading', 'Listening', 'Writing', 'Speaking'],
+                    datasets: [{
+                        label: 'O\'rtacha Ball',
+                        data: [7.2, 6.8, 6.5, 7.0],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(239, 68, 68, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgb(59, 130, 246)',
+                            'rgb(16, 185, 129)',
+                            'rgb(245, 158, 11)',
+                            'rgb(239, 68, 68)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 9,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Progress Chart - Monthly attempts
+        const progressCtx = document.getElementById('progressChart')?.getContext('2d');
+        if (progressCtx) {
+            new Chart(progressCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun'],
+                    datasets: [{
+                        label: 'Urinishlar soni',
+                        data: [3, 5, 2, 8, 4, 6],
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    function animateProgressBars() {
+        const progressBars = document.querySelectorAll('.progress-fill');
+        progressBars.forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = width;
+            }, 300);
+        });
+    }
+
+    function filterAttempts(status, button) {
         currentFilter = status;
         currentPage = 1;
 
         // Update filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.remove('btn-active');
-            btn.classList.add('btn-inactive');
+        document.querySelectorAll('.btn-filter').forEach(btn => {
+            btn.classList.remove('active');
         });
-        
-        event.currentTarget.classList.remove('btn-inactive');
-        event.currentTarget.classList.add('btn-active');
+        button.classList.add('active');
 
         updatePagination();
     }
@@ -286,33 +817,29 @@
     function updatePagination() {
         const filteredAttempts = getFilteredAttempts();
         const totalItems = filteredAttempts.length;
-        const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-        allAttempts.forEach(card => card.style.display = 'none');
+        // Hide all attempts first
+        allAttempts.forEach(card => {
+            card.style.display = 'none';
+            card.classList.remove('fade-in');
+        });
 
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const currentPageAttempts = filteredAttempts.slice(startIndex, endIndex);
+        // Show filtered attempts
+        filteredAttempts.forEach((card, index) => {
+            card.style.display = 'block';
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.classList.add('fade-in');
+        });
 
-        currentPageAttempts.forEach(card => card.style.display = 'block');
-
+        // Update pagination info
         const paginationInfo = document.getElementById('pagination-info');
         if (totalItems > 0) {
-            const start = startIndex + 1;
-            const end = Math.min(endIndex, totalItems);
-            paginationInfo.textContent = `${start}-${end} dan ${totalItems} ta ko'rsatilmoqda`;
+            paginationInfo.textContent = `1-${totalItems} dan ${totalItems} ta ko'rsatilmoqda`;
         } else {
             paginationInfo.textContent = '0 ta natija';
         }
 
-        const prevBtn = document.getElementById('prev-page');
-        const nextBtn = document.getElementById('next-page');
-
-        prevBtn.disabled = currentPage === 1;
-        nextBtn.disabled = currentPage === totalPages || totalPages === 0;
-
-        generatePageNumbers(totalPages);
-
+        // Show/hide no results message
         const noResults = document.getElementById('no-results');
         const attemptsContainer = document.getElementById('attempts-container');
         
@@ -325,46 +852,11 @@
         }
     }
 
-    function generatePageNumbers(totalPages) {
-        const pageNumbers = document.getElementById('page-numbers');
-        pageNumbers.innerHTML = '';
-
-        if (totalPages <= 1) return;
-
-        const maxVisiblePages = 5;
-        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-        if (endPage - startPage + 1 < maxVisiblePages) {
-            startPage = Math.max(1, endPage - maxVisiblePages + 1);
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            const pageBtn = document.createElement('button');
-            pageBtn.textContent = i;
-            pageBtn.onclick = () => goToPage(i);
-            pageBtn.className = `px-3 py-2 text-sm font-medium rounded-lg border transition-colors duration-200 ${i === currentPage
-                ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
-                : 'border-card bg-card text-subtle hover:bg-gray-50 dark:hover:bg-gray-800'
-                }`;
-            pageNumbers.appendChild(pageBtn);
-        }
-    }
-
-    function changePage(direction) {
-        const filteredAttempts = getFilteredAttempts();
-        const totalPages = Math.ceil(filteredAttempts.length / itemsPerPage);
-
-        const newPage = currentPage + direction;
-        if (newPage >= 1 && newPage <= totalPages) {
-            currentPage = newPage;
-            updatePagination();
-        }
-    }
-
-    function goToPage(page) {
-        currentPage = page;
-        updatePagination();
-    }
+    // Initialize animations
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('fade-in');
+    });
 </script>
 {% endblock %}

@@ -5,9 +5,9 @@ from groups.models import Group
 
 class Attempt(models.Model):
     STATUS_CHOICES = [
-        ('in_progress', 'In Progress'),
-        ('submitted', 'Submitted'),
-        ('completed', 'Completed'),
+        ('in_progress', 'Jarayonda'),
+        ('submitted', 'Yuborilgan'),
+        ('completed', 'Yakunlangan'),
     ]
     
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='attempts')
@@ -22,40 +22,54 @@ class Attempt(models.Model):
     speaking_score = models.FloatField(null=True, blank=True)
     total_score = models.FloatField(null=True, blank=True)
     
-    correct_count = models.IntegerField(null=True, blank=True)
-    incorrect_count = models.IntegerField(null=True, blank=True)
+    correct_count = models.IntegerField(default=0)
+    incorrect_count = models.IntegerField(default=0)
 
-    # Answers (JSON field would be better, but using TextField for simplicity)
-    answers = models.TextField(blank=True, help_text="JSON format answers")
+    # Answers
+    answers = models.JSONField(default=dict, blank=True)
     
     started_at = models.DateTimeField(auto_now_add=True)
     submitted_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         unique_together = ['exam', 'student']
+        ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.student.username} - {self.exam.title} ({self.status})"
+        return f"{self.student.get_full_name()} - {self.exam.title} ({self.status})"
+    
+    @property
+    def is_completed(self):
+        return self.status == 'completed'
+    
+    @property
+    def duration_minutes(self):
+        if self.completed_at and self.started_at:
+            duration = self.completed_at - self.started_at
+            return round(duration.total_seconds() / 60, 1)
+        return 0
 
 class AttemptAudio(models.Model):
     attempt = models.ForeignKey(Attempt, on_delete=models.CASCADE, related_name='audio_files')
     part_id = models.IntegerField(help_text="Speaking part ID")
-    audio_file = models.FileField(upload_to='speaking_audios/')
+    audio_file = models.FileField(upload_to='speaking_audios/%Y/%m/%d/')
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         unique_together = ['attempt', 'part_id']
+        ordering = ['part_id']
     
     def __str__(self):
-        return f"{self.attempt.student.username} - Part {self.part_id}"
+        return f"{self.attempt.student.get_full_name()} - Part {self.part_id}"
 
 class Review(models.Model):
     attempt = models.OneToOneField(Attempt, on_delete=models.CASCADE, related_name='review')
     mentor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
     
-    # Writing/Speaking specific scores
+    # Writing/Speaking criteria
     task_achievement = models.FloatField(null=True, blank=True)
     coherence_cohesion = models.FloatField(null=True, blank=True)
     lexical_resource = models.FloatField(null=True, blank=True)
@@ -64,10 +78,25 @@ class Review(models.Model):
     # Overall score
     overall_score = models.FloatField()
     
-    # Feedback
+    # Detailed feedback
     feedback = models.TextField()
+    strengths = models.TextField(blank=True, help_text="Talabaning kuchli tomonlari")
+    improvements = models.TextField(blank=True, help_text="Takomillashtirish joylari")
     
     reviewed_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-reviewed_at']
     
     def __str__(self):
-        return f"Review for {self.attempt.student.username} - {self.attempt.exam.title}"
+        return f"Baholash: {self.attempt.student.get_full_name()} - {self.attempt.exam.title}"
+    
+    @property
+    def criteria_scores(self):
+        return {
+            'task_achievement': self.task_achievement,
+            'coherence_cohesion': self.coherence_cohesion,
+            'lexical_resource': self.lexical_resource,
+            'grammatical_range': self.grammatical_range,
+        }

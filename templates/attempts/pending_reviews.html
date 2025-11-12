@@ -1,140 +1,329 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Baholash kutilayotgan ishlar{% endblock %}
+{% block title %}Baholash kutilayotgan ishlar - EduBase{% endblock %}
 
 {% block content %}
-<div class="py-6">
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-    <div class="mb-4 md:mb-0">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Baholash kutilayotgan ishlar</h2>
-      <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Talabalarning yuborgan test ishlarini baholash</p>
-    </div>
-    <a href="{% url 'mentor_dashboard' %}"
-      class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white transition-colors">
-      <i class="fas fa-arrow-left mr-2"></i> Dashboard
-    </a>
-  </div>
+<style>
+    :root {
+        --background: 0 0% 100%; --foreground: 0 0% 3.9%;
+        --card: 0 0% 100%; --card-foreground: 0 0% 3.9%;
+        --muted: 0 0% 96.1%; --muted-foreground: 0 0% 45.1%;
+        --border: 0 0% 89.8%; --primary: 0 0% 9%; --primary-foreground: 0 0% 98%;
+        --radius: 0.75rem;
+    }
+    .dark {
+        --background: 0 0% 3.9%; --foreground: 0 0% 98%;
+        --card: 0 0% 3.9%; --card-foreground: 0 0% 98%;
+        --muted: 0 0% 14.9%; --muted-foreground: 0 0% 63.9%;
+        --border: 0 0% 14.9%; --primary: 0 0% 98%; --primary-foreground: 0 0% 9%;
+    }
+    * { border-color: hsl(var(--border)); }
+    body { background: hsl(var(--background)); color: hsl(var(--foreground)); font-family: 'Inter', system-ui, sans-serif; }
 
-  {% if pending_attempts %}
-  <div class="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8">
-    <div class="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-      <div class="px-4 py-5 sm:p-6 text-center">
-        <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Jami ishlar</dt>
-        <dd class="mt-1 text-3xl font-semibold text-gray-900 dark:text-white">{{ pending_attempts|length }}</dd>
-      </div>
-    </div>
+    .container { max-width: 1280px; margin: 0 auto; padding: 1.5rem; }
 
-    <div class="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-      <div class="px-4 py-5 sm:p-6 text-center">
-        <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Writing</dt>
-        <dd class="mt-1 text-3xl font-semibold text-gray-900 dark:text-white">
-          {{ writing_count }}
-        </dd>
-      </div>
-    </div>
+    .card { background: hsl(var(--card)); color: hsl(var(--card-foreground)); border: 1px solid hsl(var(--border)); border-radius: var(--radius); }
+    .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px hsl(var(--foreground)/0.1), 0 10px 10px -5px hsl(var(--foreground)/0.04); }
 
-    <div class="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-      <div class="px-4 py-5 sm:p-6 text-center">
-        <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Speaking</dt>
-        <dd class="mt-1 text-3xl font-semibold text-gray-900 dark:text-white">
-          {{ speaking_count }}
-        </dd>
-      </div>
-    </div>
-  </div>
+    .text-muted { color: hsl(var(--muted-foreground)); }
+    .text-foreground { color: hsl(var(--card-foreground)); }
 
-  <div class="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden shadow-sm">
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
-        <thead class="bg-gray-50 dark:bg-gray-800">
-          <tr>
-            <th scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Talaba</th>
-            <th scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Imtihon
-            </th>
-            <th scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Bo'lim</th>
-            <th scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Yuborilgan
-              vaqt</th>
-            <th scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Status</th>
-            <th scope="col"
-              class="px-6 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Amallar
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white dark:bg-black divide-y divide-gray-200 dark:divide-gray-800">
-          {% for attempt in pending_attempts %}
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150">
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <div class="flex-shrink-0 h-10 w-10">
-                  <div
-                    class="h-10 w-10 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center text-white dark:text-gray-900 font-semibold">
-                    {{ attempt.student.first_name|first|upper }}{{ attempt.student.last_name|first|upper }}
-                  </div>
-                </div>
-                <div class="ml-4">
-                  <div class="text-sm font-medium text-gray-900 dark:text-white">{{ attempt.student.get_full_name }}</div>
-                  <div class="text-sm text-gray-600 dark:text-gray-400">{{ attempt.student.username }}</div>
-                </div>
-              </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm font-medium text-gray-900 dark:text-white">{{ attempt.exam.title }}</div>
-              <div class="text-sm text-gray-600 dark:text-gray-400">{{ attempt.exam.description|truncatechars:50 }}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              {% if attempt.exam.section_type == 'writing' %}
-              <span
-                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">
-                <i class="fas fa-pen mr-1"></i> Writing
-              </span>
-              {% else %}
-              <span
-                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">
-                <i class="fas fa-microphone mr-1"></i> Speaking
-              </span>
-              {% endif %}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm text-gray-900 dark:text-white">{{ attempt.submitted_at|date:"d M Y" }}</div>
-              <div class="text-xs text-gray-600 dark:text-gray-400">{{ attempt.submitted_at|time:"H:i" }}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span
-                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">
-                <i class="fas fa-clock mr-1"></i> Kutilmoqda
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <a href="{% url 'review_attempt' attempt.id %}"
-                class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-full text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white transition-colors">
-                <i class="fas fa-eye mr-1"></i> Baholash
-              </a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    .btn {
+        padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500;
+        transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+    .btn-secondary {
+        border: 1px solid hsl(var(--border)); background: hsl(var(--card)); color: hsl(var(--muted-foreground));
+    }
+    .btn-secondary:hover { background: hsl(var(--muted)); color: hsl(var(--card-foreground)); }
+    .btn-primary {
+        background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .badge {
+        display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px;
+        font-size: 0.75rem; font-weight: 500;
+    }
+    .badge-writing { background: hsl(45 93% 47%/0.1); color: hsl(45 93% 47%); }
+    .badge-speaking { background: hsl(217 91% 60%/0.1); color: hsl(217 91% 60%); }
+    .badge-pending { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+
+    .avatar {
+        width: 2.5rem; height: 2.5rem; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+        font-weight: 600; font-size: 0.875rem;
+    }
+
+    .table { width: 100%; border-collapse: collapse; }
+    .table th { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.75rem 1rem; text-align: left; }
+    .table td { padding: 1rem; border-bottom: 1px solid hsl(var(--border)); }
+    .table tbody tr:hover { background: hsl(var(--muted)); }
+
+    .empty-state { text-align: center; padding: 4rem 1rem; }
+    .empty-state-icon { width: 5rem; height: 5rem; margin: 0 auto 1rem; border-radius: 1rem; background: hsl(var(--muted)); display: flex; align-items: center; justify-content: center; color: hsl(var(--muted-foreground)); }
+
+    .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+
+    #dashboardLoadingScreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    #dashboardLoadingScreen.hidden {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .spinner-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+    }
+
+    /* Advanced Spinner */
+    .advanced-spinner {
+        width: 68px;
+        height: 68px;
+        display: inline-block;
+        position: relative;
+    }
+
+    .advanced-spinner::after,
+    .advanced-spinner::before {
+        content: '';  
+        box-sizing: border-box;
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        border: 3px solid hsl(var(--primary));
+        position: absolute;
+        left: 0;
+        top: 0;
+        animation: animloader 1.2s linear infinite;
+    }
+
+    .advanced-spinner::before {
+        animation-delay: 0s;
+        border-color: hsl(var(--primary));
+        border-top-color: transparent;
+        border-right-color: transparent;
+    }
+
+    .advanced-spinner::after {
+        animation-delay: 0.6s;
+        border-color: hsl(var(--primary) / 0.5);
+        border-left-color: transparent;
+        border-bottom-color: transparent;
+    }
+
+    @keyframes animloader {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }   
+
+    .loading-text {
+        text-align: center;
+    }
+
+    .loading-text h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 0.25rem;
+    }
+
+    .loading-text p {
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Skeleton Loader */
+    .skeleton {
+        background: linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--border)) 50%, hsl(var(--muted)) 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 0.5rem;
+    }
+</style>
+
+<div id="dashboardLoadingScreen">
+    <div class="loading-container">
+        <div class="spinner-wrapper">
+            <div class="advanced-spinner"></div>
+        </div>
+        <div class="loading-text">
+            <h3>Ma'lumotlar yuklanmoqda</h3>
+            <p>Bir oz kutib turing...</p>
+        </div>
     </div>
-  </div>
-  {% else %}
-  <div class="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden shadow-sm">
-    <div class="px-4 py-16 text-center">
-      <i class="fas fa-clipboard-check text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white">Baholash kutilayotgan ishlar yo'q</h3>
-      <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Hozircha baholash uchun yuborilgan ishlar mavjud emas.</p>
-      <div class="mt-6">
-        <a href="{% url 'mentor_dashboard' %}"
-          class="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white transition-colors">
-          <i class="fas fa-arrow-left mr-2"></i> Dashboard ga qaytish
-        </a>
-      </div>
-    </div>
-  </div>
-  {% endif %}
 </div>
+
+<div class="container space-y-8 fade-in" id="reviewContent">
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-foreground">Baholash kutilayotgan ishlar</h1>
+            <p class="text-muted mt-1">Talabalarning yuborgan test ishlarini baholash</p>
+        </div>
+        <a href="{% url 'accounts:mentor_dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Dashboard
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    {% if pending_attempts %}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div class="card rounded-2xl p-6 card-hover text-center">
+            <p class="text-sm font-medium text-muted">Jami ishlar</p>
+            <p class="text-3xl font-bold text-foreground mt-1">{{ pending_attempts|length }}</p>
+        </div>
+        <div class="card rounded-2xl p-6 card-hover text-center">
+            <p class="text-sm font-medium text-muted">Writing</p>
+            <p class="text-3xl font-bold text-foreground mt-1">{{ writing_count }}</p>
+        </div>
+        <div class="card rounded-2xl p-6 card-hover text-center">
+            <p class="text-sm font-medium text-muted">Speaking</p>
+            <p class="text-3xl font-bold text-foreground mt-1">{{ speaking_count }}</p>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card rounded-2xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Talaba</th>
+                        <th>Imtihon</th>
+                        <th>Bo'lim</th>
+                        <th>Yuborilgan vaqt</th>
+                        <th>Status</th>
+                        <th class="text-right">Amallar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attempt in pending_attempts %}
+                    <tr class="card-hover">
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="avatar">
+                                    {{ attempt.student.first_name|first|upper }}{{ attempt.student.last_name|first|upper }}
+                                </div>
+                                <div>
+                                    <div class="font-medium text-foreground">{{ attempt.student.get_full_name }}</div>
+                                    <div class="text-sm text-muted">{{ attempt.student.username }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="font-medium text-foreground">{{ attempt.exam.title }}</div>
+                            <div class="text-sm text-muted">{{ attempt.exam.description|truncatechars:50 }}</div>
+                        </td>
+                        <td>
+                            {% if attempt.exam.section_type == 'writing' %}
+                            <span class="badge badge-writing"><i class="fas fa-pen"></i> Writing</span>
+                            {% else %}
+                            <span class="badge badge-speaking"><i class="fas fa-microphone"></i> Speaking</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="text-foreground">{{ attempt.submitted_at|date:"d M Y" }}</div>
+                            <div class="text-sm text-muted">{{ attempt.submitted_at|time:"H:i" }}</div>
+                        </td>
+                        <td>
+                            <span class="badge badge-pending"><i class="fas fa-clock"></i> Kutilmoqda</span>
+                        </td>
+                        <td class="text-right">
+                            <a href="{% url 'attempts:review_attempt' attempt.id %}" class="btn btn-primary text-xs">
+                                <i class="fas fa-eye"></i> Baholash
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="card rounded-2xl">
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-clipboard-check text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-foreground mb-2">Baholash kutilayotgan ishlar yo'q</h3>
+            <p class="text-muted mb-6">Hozircha baholash uchun yuborilgan ishlar mavjud emas.</p>
+            <a href="{% url 'accounts:mentor_dashboard' %}" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Dashboard ga qaytish
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const loadingScreen = document.getElementById('dashboardLoadingScreen');
+        const reviewContent = document.getElementById('reviewContent');
+        
+        function hideLoadingScreen() {
+            if (loadingScreen) loadingScreen.classList.add('hidden');
+            if (reviewContent) {
+                reviewContent.style.opacity = '1';
+                reviewContent.style.visibility = 'visible';
+            }
+        }
+
+        let totalImages = 0, loadedImages = 0;
+        const images = document.querySelectorAll('img');
+        totalImages = images.length;
+
+        if (totalImages === 0) {
+            setTimeout(hideLoadingScreen, 300);
+        } else {
+            images.forEach(img => {
+                img.addEventListener('load', () => {
+                    loadedImages++;
+                    if (loadedImages === totalImages) hideLoadingScreen();
+                });
+                img.addEventListener('error', () => {
+                    loadedImages++;
+                    if (loadedImages === totalImages) hideLoadingScreen();
+                });
+            });
+        }
+
+        window.addEventListener('load', hideLoadingScreen);
+        setTimeout(hideLoadingScreen, 2000);
+    });
+</script>
 {% endblock %}

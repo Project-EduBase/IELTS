@@ -1,0 +1,357 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ student.get_full_name|default:student.username }} - Statistika{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    :root {
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 3.9%;
+        --muted: 0 0% 96.1%;
+        --muted-foreground: 0 0% 45.1%;
+        --border: 0 0% 89.8%;
+        --primary: 0 0% 9%;
+        --primary-foreground: 0 0% 98%;
+    }
+
+    .dark {
+        --card: 0 0% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --muted: 0 0% 14.9%;
+        --muted-foreground: 0 0% 63.9%;
+        --border: 0 0% 14.9%;
+        --primary: 0 0% 98%;
+        --primary-foreground: 0 0% 9%;
+    }
+
+    .card {
+        background-color: hsl(var(--card));
+        color: hsl(var(--card-foreground));
+        border: 1px solid hsl(var(--border));
+    }
+
+    .text-muted {
+        color: hsl(var(--muted-foreground));
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    @media (min-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    .stat-card {
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        background-color: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: hsl(var(--card-foreground));
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+        margin-top: 0.5rem;
+    }
+
+    .progress-item {
+        margin-bottom: 1.5rem;
+    }
+
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 0.5rem;
+        background-color: hsl(var(--muted));
+        border-radius: 9999px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        border-radius: 9999px;
+        transition: width 0.3s ease;
+        background-color: hsl(217 91% 60%);
+    }
+
+    .progress-reading { background-color: hsl(217 91% 60%) !important; }
+    .progress-listening { background-color: hsl(142 76% 36%) !important; }
+    .progress-writing { background-color: hsl(45 93% 47%) !important; }
+    .progress-speaking { background-color: hsl(345 83% 41%) !important; }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .badge-completed {
+        background-color: hsl(142 76% 36% / 0.1);
+        color: hsl(142 76% 36%);
+    }
+
+    .badge-submitted {
+        background-color: hsl(217 91% 60% / 0.1);
+        color: hsl(217 91% 60%);
+    }
+
+    .badge-in-progress {
+        background-color: hsl(45 93% 47% / 0.1);
+        color: hsl(45 93% 47%);
+    }
+
+    .badge-section {
+        background-color: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+    }
+
+    .attempt-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .attempt-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .back-link {
+        color: hsl(var(--primary));
+        text-decoration: none;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .back-link:hover {
+        text-decoration: underline;
+    }
+
+    .section-score {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: hsl(var(--primary));
+    }
+
+    .fade-in {
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+
+    .empty-state-icon {
+        width: 4rem;
+        height: 4rem;
+        margin: 0 auto 1rem;
+        border-radius: 1rem;
+        background-color: hsl(var(--muted));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: hsl(var(--muted-foreground));
+    }
+</style>
+
+<div class="space-y-8 fade-in">
+    <!-- Back Link -->
+    <a href="{% url 'attempts:mentor_stats' %}" class="back-link">
+        <i class="fas fa-arrow-left w-4 h-4"></i>
+        Statistikaga qaytish
+    </a>
+
+    <!-- Header Section -->
+    <div class="space-y-2">
+        <h1 class="text-3xl font-bold tracking-tight text-card">{{ student.get_full_name|default:student.username }}</h1>
+        <p class="text-muted">
+            <i class="fas fa-envelope w-4 h-4 inline mr-2"></i>
+            {{ student.email }}
+        </p>
+    </div>
+
+    <!-- Statistics Section -->
+    {% if attempts %}
+    <div class="space-y-6">
+        <!-- Stats Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_attempts }}</div>
+                <div class="stat-label">Jami Urinishlar</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ completed_attempts }}</div>
+                <div class="stat-label">Bajarilgan</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ avg_score }}</div>
+                <div class="stat-label">O'rtacha Ball</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ success_rate }}%</div>
+                <div class="stat-label">Muvaffaqiyat Darajasi</div>
+            </div>
+        </div>
+
+        <!-- Progress by Section -->
+        <div class="card rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-card mb-4">Bo'limlar bo'yicha progress</h3>
+            <div class="space-y-4">
+                {% for section_data in section_progress %}
+                <div class="progress-item">
+                    <div class="progress-header">
+                        <span class="text-sm font-medium text-card">{{ section_data.section_name }}</span>
+                        <div class="text-right">
+                            <div class="section-score">{{ section_data.avg_score }}</div>
+                            <span class="text-sm text-muted">{{ section_data.percentage }}%</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-{{ section_data.section_type }}" style="width: {{ section_data.percentage }}%;"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-muted mt-1">
+                        <span>{{ section_data.completed_count }} ta bajarilgan</span>
+                        <span>{{ section_data.total_count }} ta test</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Attempts List -->
+    <div class="card rounded-xl p-6">
+        <h3 class="text-lg font-semibold text-card mb-4">Barcha Urinishlar</h3>
+        
+        {% if attempts %}
+        <div class="space-y-4">
+            {% for attempt in attempts %}
+            <div class="attempt-card card rounded-lg p-4 border">
+                <!-- Header -->
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex-1">
+                        <h4 class="text-sm font-semibold text-card line-clamp-2">
+                            {{ attempt.exam.title }}
+                        </h4>
+                        <p class="text-xs text-muted mt-1">
+                            <i class="fas fa-book w-3 h-3 inline mr-1"></i>
+                            {{ attempt.exam.get_section_type_display }}
+                        </p>
+                    </div>
+                    <div class="flex flex-col items-end gap-2 shrink-0">
+                        {% if attempt.status == 'completed' %}
+                        <span class="badge badge-completed">Bajarilgan</span>
+                        {% elif attempt.status == 'submitted' %}
+                        <span class="badge badge-submitted">Yuborilgan</span>
+                        {% else %}
+                        <span class="badge badge-in-progress">Jarayonda</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="grid grid-cols-2 gap-4 text-sm mb-3">
+                    {% if attempt.total_score %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-muted">Ball:</span>
+                        <span class="font-bold text-card">{{ attempt.total_score }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if attempt.exam.section_type == "reading" or attempt.exam.section_type == "listening" %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-muted">To'g'ri/Noto'g'ri:</span>
+                        <span class="text-xs text-card">
+                            <span class="text-green-600">{{ attempt.correct_count|default:"0" }}</span> / 
+                            <span class="text-red-600">{{ attempt.incorrect_count|default:"0" }}</span>
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Dates -->
+                <div class="grid grid-cols-1 gap-2 text-xs text-muted border-t border-border pt-3">
+                    {% if attempt.created_at %}
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-clock w-3 h-3"></i>
+                        <span>Boshlangan: {{ attempt.created_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if attempt.submitted_at %}
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-paper-plane w-3 h-3"></i>
+                        <span>Yuborilgan: {{ attempt.submitted_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if attempt.completed_at %}
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-check-circle w-3 h-3"></i>
+                        <span>Bajarilgan: {{ attempt.completed_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Action Link -->
+                {% if attempt.status == 'completed' and attempt.exam.section_type == "reading" or attempt.exam.section_type == "listening" %}
+                <div class="mt-3 pt-3 border-t border-border">
+                    <a href="{% url 'attempts:attempt_detail' attempt.id %}" class="text-xs font-medium text-primary hover:underline">
+                        <i class="fas fa-chart-bar w-3 h-3 inline mr-1"></i>
+                        Tahlilni ko'rish
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-inbox text-xl"></i>
+            </div>
+            <h3 class="text-sm font-medium text-card mb-2">Urinishlar topilmadi</h3>
+            <p class="text-xs text-muted">Bu talaba hali hech qanday imtihon topshirmagan.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

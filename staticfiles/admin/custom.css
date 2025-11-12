@@ -1,0 +1,67 @@
+#header {
+    background: #2c3e50;
+    color: #fff;
+}
+
+#branding h1 {
+    color: #fff;
+}
+
+#branding h1 a:link, #branding h1 a:visited {
+    color: #fff;
+}
+
+div.breadcrumbs {
+    background: #34495e;
+    color: #fff;
+}
+
+.module h2, .module caption, .inline-group h2 {
+    background: #2c3e50;
+    color: #fff;
+}
+
+.button, input[type=submit], input[type=button], .submit-row input, a.button {
+    background: #2c3e50;
+    color: #fff;
+}
+
+.button:hover, input[type=submit]:hover, input[type=button]:hover {
+    background: #34495e;
+}
+
+.button.default, input[type=submit].default, .submit-row input.default {
+    background: #27ae60;
+}
+
+.button.default:hover, input[type=submit].default:hover {
+    background: #2ecc71;
+}
+
+a:link, a:visited {
+    color: #2c3e50;
+}
+
+.object-tools a:link, .object-tools a:visited {
+    background: #27ae60;
+}
+
+.object-tools a:hover {
+    background: #2ecc71;
+}
+
+#changelist-filter h2 {
+    background: #2c3e50;
+}
+
+.selector-chosen h2 {
+    background: #2c3e50 !important;
+}
+
+.calendar td.selected a {
+    background: #2c3e50;
+}
+
+.calendar td a:hover {
+    background: #34495e;
+}

@@ -14,27 +14,30 @@ class Profile(models.Model):
         (MENTOR, 'Mentor'),
         (STUDENT, 'Student'),
     ]
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default=STUDENT)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default=STUDENT, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'accounts_profile'
+        verbose_name = 'Profil'
+        verbose_name_plural = 'Profillar'
+        indexes = [
+            models.Index(fields=['role']),
+        ]
     
     def __str__(self):
         return f"{self.user.username} - {self.get_role_display()}"
+    
+    def get_display_name(self):
+        """Foydalanuvchining to'liq nomini qaytarish"""
+        return self.user.get_full_name() or self.user.username
 
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     """
-    Har safar yangi User yaratilganda avtomatik Profile ham yaratiladi.
-    Shu bilan birga first_name va last_name bo'sh bo'lsa, ularni default qiymat bilan to'ldiramiz.
+    Yangi User yaratilganda avtomatik Profile ham yaratiladi
     """
     if created:
-        # Profile yaratish
         Profile.objects.get_or_create(user=instance)
-
-        # Agar ism va familiya berilmagan bo‘lsa, default qilib username asosida to‘ldiramiz
-        if not instance.first_name:
-            instance.first_name = ""
-        if not instance.last_name:
-            instance.last_name = ""
-        instance.save()

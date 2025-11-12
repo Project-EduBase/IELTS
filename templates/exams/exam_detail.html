@@ -1,179 +1,343 @@
 {% extends 'base.html' %}
-
 {% block title %}{{ exam.title }} - EduBase{% endblock %}
 
 {% block content %}
 <style>
-    /* Custom light/dark mode classes for this page */
-    .light .bg-card {
-        background-color: #FFFFFF;
+    /* EduBase + Shadcn/ui moslashuvi */
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 0 0% 3.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 3.9%;
+        --muted: 0 0% 96.1%;
+        --muted-foreground: 0 0% 45.1%;
+        --border: 0 0% 89.8%;
+        --primary: 0 0% 9%;
+        --primary-foreground: 0 0% 98%;
+        --radius: 0.75rem;
     }
-    .dark .bg-card {
-        background-color: #1A1A1A;
+
+    .dark {
+        --background: 0 0% 3.9%;
+        --foreground: 0 0% 98%;
+        --card: 0 0% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --muted: 0 0% 14.9%;
+        --muted-foreground: 0 0% 63.9%;
+        --border: 0 0% 14.9%;
+        --primary: 0 0% 98%;
+        --primary-foreground: 0 0% 9%;
     }
-    .light .border-card {
-        border-color: #E0E0E0;
+
+    * {
+        border-color: hsl(var(--border));
     }
-    .dark .border-card {
-        border-color: #333333;
+
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'Inter', system-ui, sans-serif;
     }
-    .light .text-on-card {
-        color: #000000;
+
+    .card {
+        background-color: hsl(var(--card));
+        color: hsl(var(--card-foreground));
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        transition: all 0.25s ease;
     }
-    .dark .text-on-card {
-        color: #FFFFFF;
+
+    .card-hover {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .light .text-subtle {
-        color: #555555;
+    .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px hsl(var(--foreground) / 0.1), 0 10px 10px -5px hsl(var(--foreground) / 0.04);
     }
-    .dark .text-subtle {
-        color: #AAAAAA;
+
+    .text-muted { color: hsl(var(--muted-foreground)); }
+
+    .btn-primary {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        padding: 0.75rem 1.5rem;
+        border-radius: calc(var(--radius) - 0.25rem);
+        font-weight: 600;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
     }
+    .btn-primary:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+
+    .btn-disabled {
+        background-color: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        padding: 0.75rem 1.5rem;
+        border-radius: calc(var(--radius) - 0.25rem);
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: not-allowed;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .badge {
+        display: inline-flex; align-items: center;
+        padding: 0.25rem 0.75rem; border-radius: 9999px;
+        font-size: 0.75rem; font-weight: 500;
+    }
+    .badge-section { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+
+    .info-card {
+        display: flex; align-items: center;
+        padding: 1rem; border-radius: calc(var(--radius) - 0.25rem);
+        background: hsl(var(--muted)); border: 1px solid hsl(var(--border));
+    }
+    .info-card-icon {
+        width: 2rem; height: 2rem; border-radius: 0.5rem;
+        display: flex; align-items: center; justify-content: center;
+        background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+        margin-right: 0.75rem;
+    }
+
+    .breadcrumb {
+        display: flex; align-items: center; gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+    .breadcrumb-link {
+        color: hsl(var(--muted-foreground));
+        transition: color 0.2s ease;
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .breadcrumb-link:hover {
+        color: hsl(var(--card-foreground));
+    }
+    .breadcrumb-separator { color: hsl(var(--muted-foreground)); }
+
+    .alert {
+        display: flex; padding: 1rem;
+        border-radius: calc(var(--radius) - 0.25rem);
+        background: hsl(var(--muted)); border: 1px solid hsl(var(--border));
+    }
+    .alert-icon {
+        width: 1.25rem; height: 1.25rem; margin-right: 0.75rem;
+        color: hsl(var(--card-foreground));
+    }
+
+    .section-reading { border-left: 4px solid hsl(217 91% 60%); }
+    .section-listening { border-left: 4px solid hsl(142 76% 36%); }
+    .section-writing { border-left: 4px solid hsl(45 93% 47%); }
+    .section-speaking { border-left: 4px solid hsl(345 83% 41%); }
+
+    /* Fade In */
+    .fade-in {
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .stagger > * {
+        opacity: 0;
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+    .stagger > *:nth-child(1) { animation-delay: 0.1s; }
+    .stagger > *:nth-child(2) { animation-delay: 0.2s; }
+    .stagger > *:nth-child(3) { animation-delay: 0.3s; }
 </style>
 
-<div class="py-6 space-y-8">
-    <div class="px-4 sm:px-0">
-        <nav class="flex mb-6" aria-label="Breadcrumb">
-            <ol class="flex items-center space-x-4">
-                <li>
-                    <div>
-                        <a href="{% url 'exam_list' %}"
-                           class="text-subtle hover:text-text-on-card transition-colors duration-200">
-                            <i class="fas fa-book-open mr-2"></i>Testlar
-                        </a>
+<div class="max-w-7xl mx-auto p-6 space-y-8 fade-in">
+
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb">
+        <a href="{% url 'exam_list' %}" class="breadcrumb-link">
+            <i class="fas fa-book-open w-4 h-4"></i>
+            Testlar
+        </a>
+        <i class="fas fa-chevron-right breadcrumb-separator w-3 h-3"></i>
+        <span class="text-foreground font-medium">{{ exam.title }}</span>
+    </nav>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Left Column -->
+        <div class="lg:col-span-2 space-y-6 stagger">
+            <!-- Exam Header -->
+            <div class="card rounded-2xl p-6 section-{{ exam.section_type }}">
+                <div class="flex items-start justify-between mb-4">
+                    <h1 class="text-2xl font-extrabold text-foreground">{{ exam.title }}</h1>
+                    <span class="badge badge-section">{{ exam.get_section_type_display }}</span>
+                </div>
+                {% if exam.description %}
+                <p class="text-muted leading-relaxed mb-6">{{ exam.description }}</p>
+                {% endif %}
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="info-card">
+                        <div class="info-card-icon"><i class="fas fa-clock text-sm"></i></div>
+                        <div>
+                            <p class="text-sm font-medium text-foreground">Vaqt</p>
+                            <p class="text-sm text-muted">{{ exam.time_limit }} daqiqa</p>
+                        </div>
                     </div>
-                </li>
-                <li>
-                    <div class="flex items-center">
-                        <i class="fas fa-chevron-right text-subtle mx-2"></i>
-                        <span class="text-text-on-card font-medium">{{ exam.title }}</span>
-                    </div>
-                </li>
-            </ol>
-        </nav>
-
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div class="lg:col-span-2">
-                <div class="bg-card border border-card rounded-xl shadow-sm overflow-hidden">
-                    <div class="px-6 py-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h1 class="text-2xl font-bold text-text-on-card">{{ exam.title }}</h1>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                                {{ exam.get_section_type_display }}
-                            </span>
+                    <div class="info-card">
+                        <div class="info-card-icon"><i class="fas fa-list text-sm"></i></div>
+                        <div>
+                            <p class="text-sm font-medium text-foreground">Bo'lim</p>
+                            <p class="text-sm text-muted">{{ exam.get_section_type_display }}</p>
                         </div>
-
-                        {% if exam.description %}
-                        <p class="text-subtle leading-relaxed">{{ exam.description }}</p>
-                        {% endif %}
-
-                        <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div class="flex items-center p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-card">
-                                <div class="flex-shrink-0">
-                                    <i class="fas fa-clock text-text-on-card text-lg"></i>
-                                </div>
-                                <div class="ml-3">
-                                    <p class="text-sm font-medium text-text-on-card">Vaqt</p>
-                                    <p class="text-sm text-subtle">{{ exam.time_limit }} daqiqa</p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-card">
-                                <div class="flex-shrink-0">
-                                    <i class="fas fa-list text-text-on-card text-lg"></i>
-                                </div>
-                                <div class="ml-3">
-                                    <p class="text-sm font-medium text-text-on-card">Bo'lim</p>
-                                    <p class="text-sm text-subtle">{{ exam.get_section_type_display }}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {% if existing_attempt %}
-                        <div class="mt-6 bg-gray-100 dark:bg-gray-800 border border-card rounded-lg p-4">
-                            <div class="flex">
-                                <div class="flex-shrink-0">
-                                    <i class="fas fa-info-circle text-text-on-card"></i>
-                                </div>
-                                <div class="ml-3">
-                                    <h3 class="text-sm font-medium text-text-on-card">Urinish holati</h3>
-                                    <div class="mt-2 text-sm text-subtle">
-                                        <p>Siz bu testni {{ existing_attempt.created_at|date:"d.m.Y H:i" }} da topshirgansiz.</p>
-                                        
-                                        {% if existing_attempt.status == 'completed' %}
-                                            <p class="mt-1 font-semibold text-text-on-card">Ball: {{ existing_attempt.total_score }}</p>
-
-                                            {% if existing_attempt.exam.section_type == 'reading' or existing_attempt.exam.section_type == 'listening' %}
-                                                <p class="mt-1 text-text-on-card">
-                                                    ✅ To‘g‘ri: {{ existing_attempt.correct_count }}<br>
-                                                    ❌ Noto‘g‘ri: {{ existing_attempt.incorrect_count }}
-                                                </p>
-                                            {% endif %}
-                                        
-                                        {% elif existing_attempt.status == 'submitted' %}
-                                            <p class="mt-1 font-semibold text-text-on-card">Tekshirilmoqda...</p>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
             </div>
 
-            <div>
-                <div class="bg-card border border-card rounded-xl shadow-sm overflow-hidden">
-                    <div class="px-6 py-6">
-                        <h3 class="text-lg font-semibold text-text-on-card mb-4">Test haqida</h3>
-                        <div class="space-y-4">
-                            {% if exam.section_type == 'reading' %}
-                            <div class="flex items-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                                <i class="fas fa-book text-text-on-card"></i>
-                                <span class="ml-3 text-sm font-medium text-text-on-card">Reading bo'limi</span>
+            <!-- Attempt Status -->
+            {% if existing_attempt %}
+            <div class="alert">
+                <i class="fas fa-info-circle alert-icon"></i>
+                <div>
+                    <h3 class="text-sm font-medium text-foreground mb-1">Urinish holati</h3>
+                    <div class="text-sm text-muted space-y-1">
+                        <p>Siz bu testni {{ existing_attempt.created_at|date:"d.m.Y H:i" }} da topshirgansiz.</p>
+                        {% if existing_attempt.status == 'completed' %}
+                            <p class="font-semibold text-foreground">Ball: {{ existing_attempt.total_score }}</p>
+                            {% if exam.section_type in 'reading,listening' %}
+                            <div class="flex items-center gap-4 mt-2 text-sm">
+                                <span class="flex items-center gap-1 text-foreground">
+                                    <i class="fas fa-check text-green-600 dark:text-green-400"></i>
+                                    To'g'ri: {{ existing_attempt.correct_count|default:"0" }}
+                                </span>
+                                <span class="flex items-center gap-1 text-foreground">
+                                    <i class="fas fa-times text-red-600 dark:text-red-400"></i>
+                                    Noto'g'ri: {{ existing_attempt.incorrect_count|default:"0" }}
+                                </span>
                             </div>
-                            <p class="text-sm text-subtle">Matnlarni o'qib, savollarga javob bering.</p>
-                            {% elif exam.section_type == 'listening' %}
-                            <div class="flex items-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                                <i class="fas fa-headphones text-text-on-card"></i>
-                                <span class="ml-3 text-sm font-medium text-text-on-card">Listening bo'limi</span>
-                            </div>
-                            <p class="text-sm text-subtle">Audio yozuvlarni tinglab, savollarga javob bering.</p>
-                            {% elif exam.section_type == 'writing' %}
-                            <div class="flex items-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                                <i class="fas fa-pen text-text-on-card"></i>
-                                <span class="ml-3 text-sm font-medium text-text-on-card">Writing bo'limi</span>
-                            </div>
-                            <p class="text-sm text-subtle">Berilgan mavzu bo'yicha insho yozing.</p>
-                            {% elif exam.section_type == 'speaking' %}
-                            <div class="flex items-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                                <i class="fas fa-microphone text-text-on-card"></i>
-                                <span class="ml-3 text-sm font-medium text-text-on-card">Speaking bo'limi</span>
-                            </div>
-                            <p class="text-sm text-subtle">Savollarga og'zaki javob bering.</p>
                             {% endif %}
-                        </div>
-
-                        {% if not existing_attempt and user.profile.role == 'student' %}
-                        <div class="mt-6">
-                            <a href="{% url 'take_exam' exam.id %}"
-                               class="w-full flex justify-center items-center py-3 px-4 border border-card rounded-lg text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 transition-colors duration-200">
-                                <i class="fas fa-play mr-2"></i> Testni boshlash
-                            </a>
-                        </div>
-                        {% elif existing_attempt %}
-                        <div class="mt-6">
-                            <button
-                                class="w-full flex justify-center items-center py-3 px-4 border border-card rounded-lg text-sm font-medium text-subtle bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
-                                disabled>
-                                Test topshirilgan
-                            </button>
-                        </div>
+                        {% elif existing_attempt.status == 'submitted' %}
+                            <p class="font-semibold text-foreground">Tekshirilmoqda...</p>
+                        {% else %}
+                            <p class="font-semibold text-foreground">Jarayonda</p>
                         {% endif %}
                     </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column -->
+        <div class="space-y-6 stagger">
+            <!-- Section Info -->
+            <div class="card rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-foreground mb-4">Test haqida</h3>
+                <div class="space-y-4">
+                    {% if exam.section_type == 'reading' %}
+                    <div class="info-card">
+                        <div class="info-card-icon"><i class="fas fa-book text-sm"></i></div>
+                        <span class="text-sm font-medium text-foreground">Reading bo'limi</span>
+                    </div>
+                    <p class="text-sm text-muted">Matnlarni o'qib, savollarga javob bering.</p>
+                    {% elif exam.section_type == 'listening' %}
+                    <div class="info-card">
+                        <div class="info-card-icon"><i class="fas fa-headphones text-sm"></i></div>
+                        <span class="text-sm font-medium text-foreground">Listening bo'limi</span>
+                    </div>
+                    <p class="text-sm text-muted">Audio yozuvlarni tinglab, savollarga javob bering.</p>
+                    {% elif exam.section_type == 'writing' %}
+                    <div class="info-card">
+                        <div class="info-card-icon"><i class="fas fa-pen text-sm"></i></div>
+                        <span class="text-sm font-medium text-foreground">Writing bo'limi</span>
+                    </div>
+                    <p class="text-sm text-muted">Berilgan mavzu bo'yicha insho yozing.</p>
+                    {% elif exam.section_type == 'speaking' %}
+                    <div class="info-card">
+                        <div class="info-card-icon"><i class="fas fa-microphone text-sm"></i></div>
+                        <span class="text-sm font-medium text-foreground">Speaking bo'limi</span>
+                    </div>
+                    <p class="text-sm text-muted">Savollarga og'zaki javob bering.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Action Button -->
+                <div class="mt-6">
+                    {% if not existing_attempt and user.profile.role == 'student' %}
+                    <a href="{% url 'take_exam' exam.id %}" class="btn-primary">
+                        <i class="fas fa-play w-4 h-4"></i>
+                        Testni boshlash
+                    </a>
+                    {% elif existing_attempt %}
+                    <button class="btn-disabled" disabled>
+                        <i class="fas fa-check w-4 h-4"></i>
+                        Test topshirilgan
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Tips -->
+            <div class="card rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-foreground mb-4">Tayyorgarlik maslahatlari</h3>
+                <div class="space-y-3">
+                    {% if exam.section_type == 'reading' %}
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-lightbulb text-yellow-600 dark:text-yellow-400 mt-0.5"></i>
+                        <p class="text-sm text-muted">Matnni diqqat bilan o'qing va asosiy g'oyani aniqlang</p>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-lightbulb text-yellow-600 dark:text-yellow-400 mt-0.5"></i>
+                        <p class="text-sm text-muted">Savollarni avval o'qib, keyin javob qidiring</p>
+                    </div>
+                    {% elif exam.section_type == 'listening' %}
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-lightbulb text-yellow-600 dark:text-yellow-400 mt-0.5"></i>
+                        <p class="text-sm text-muted">Audio yozuvni diqqat bilan tinglang</p>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-lightbulb text-yellow-600 dark:text-yellow-400 mt-0.5"></i>
+                        <p class="text-sm text-muted">Kalit so'zlar va iboralarga e'tibor bering</p>
+                    </div>
+                    {% elif exam.section_type == 'writing' %}
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-lightbulb text-yellow-600 dark:text-yellow-400 mt-0.5"></i>
+                        <p class="text-sm text-muted">Reja tuzing va tuzilishga rioya qiling</p>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-lightbulb text-yellow-600 dark:text-yellow-400 mt-0.5"></i>
+                        <p class="text-sm text-muted">Grammatika va imloni tekshiring</p>
+                    </div>
+                    {% elif exam.section_type == 'speaking' %}
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-lightbulb text-yellow-600 dark:text-yellow-400 mt-0.5"></i>
+                        <p class="text-sm text-muted">Aniq va ravon gapirishga harakat qiling</p>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-lightbulb text-yellow-600 dark:text-yellow-400 mt-0.5"></i>
+                        <p class="text-sm text-muted">Tovushlarni to'g'ri talaffuz qiling</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const cards = document.querySelectorAll('.stagger > *');
+        cards.forEach((card, i) => {
+            card.style.animationDelay = `${i * 0.1}s`;
+            card.classList.add('fade-in');
+        });
+    });
+</script>
 {% endblock %}

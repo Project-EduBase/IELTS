@@ -1,172 +1,466 @@
-{% extends "base.html" %}
-
-{% block title %}Mentor Dashboard{% endblock %}
-
+{% extends 'base.html' %}
+{% block title %}Mentor Paneli - EduBase{% endblock %}
 {% block content %}
-<div class="py-6">
-  <div class="px-4 sm:px-0">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Salom, {{ user.get_full_name|default:user.username }} 👋</h1>
-    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Mentor boshqaruv paneli</p>
-  </div>
+<style>
+    /* EduBase + Shadcn/ui + Login/Dashboard moslashuvi */
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 0 0% 3.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 3.9%;
+        --muted: 0 0% 96.1%;
+        --muted-foreground: 0 0% 45.1%;
+        --border: 0 0% 89.8%;
+        --primary: 0 0% 9%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 0 0% 96.1%;
+        --secondary-foreground: 0 0% 9%;
+        --radius: 0.75rem;
+    }
 
-  <div class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-    <div class="bg-white dark:bg-black overflow-hidden shadow-sm border border-gray-200 dark:border-gray-800 rounded-lg hover:shadow-md transition-shadow duration-200">
-      <div class="px-4 py-5 sm:p-6">
-        <div class="flex items-center">
-          <div class="flex-shrink-0 bg-gray-900 dark:bg-white rounded-md p-3">
-            <i class="fas fa-user-graduate text-white dark:text-gray-900 text-xl"></i>
-          </div>
-          <div class="ml-5 w-0 flex-1">
-            <dl>
-              <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Talabalar</dt>
-              <dd>
-                <div class="text-lg font-semibold text-gray-900 dark:text-white">{{ total_students }}</div>
-              </dd>
-            </dl>
-          </div>
+    .dark {
+        --background: 0 0% 3.9%;
+        --foreground: 0 0% 98%;
+        --card: 0 0% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --muted: 0 0% 14.9%;
+        --muted-foreground: 0 0% 63.9%;
+        --border: 0 0% 14.9%;
+        --primary: 0 0% 98%;
+        --primary-foreground: 0 0% 9%;
+        --secondary: 0 0% 14.9%;
+        --secondary-foreground: 0 0% 98%;
+    }
+
+    * {
+        border-color: hsl(var(--border));
+    }
+
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    .card {
+        background-color: hsl(var(--card));
+        color: hsl(var(--card-foreground));
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        transition: all 0.25s ease;
+    }
+
+    .card-hover {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 28px -6px hsl(var(--foreground) / 0.12);
+    }
+
+    .text-muted { color: hsl(var(--muted-foreground)); }
+    .text-primary { color: hsl(var(--primary)); }
+
+    .icon-container {
+        width: 3rem; height: 3rem;
+        border-radius: 0.75rem;
+        display: flex; align-items: center; justify-content: center;
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+    }
+
+    .badge {
+        display: inline-flex; align-items: center;
+        padding: 0.25rem 0.75rem; border-radius: 9999px;
+        font-size: 0.75rem; font-weight: 500;
+    }
+    .badge-completed { background: hsl(142 76% 36% / 0.1); color: hsl(142 76% 36%); }
+    .badge-submitted { background: hsl(217 91% 60% / 0.1); color: hsl(217 91% 60%); }
+    .badge-in-progress { background: hsl(45 93% 47% / 0.1); color: hsl(45 93% 47%); }
+
+    .table-header {
+        background-color: hsl(var(--muted));
+        border-bottom: 1px solid hsl(var(--border));
+    }
+    .table-row {
+        transition: background-color 0.2s ease;
+        border-bottom: 1px solid hsl(var(--border));
+    }
+    .table-row:hover {
+        background-color: hsl(var(--muted));
+    }
+
+    .avatar {
+        width: 2.5rem; height: 2.5rem;
+        border-radius: 50%; display: flex;
+        align-items: center; justify-content: center;
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        font-weight: 600; font-size: 0.875rem;
+    }
+
+    .btn-link {
+        color: hsl(217 91% 60%);
+        transition: color 0.2s ease, text-decoration 0.2s ease;
+    }
+    .btn-link:hover {
+        color: hsl(217 91% 45%);
+        text-decoration: underline;
+    }
+
+    .empty-state {
+        text-align: center; padding: 3rem 1rem;
+    }
+    .empty-state-icon {
+        width: 4rem; height: 4rem; margin: 0 auto 1rem;
+        border-radius: 1rem; background: hsl(var(--muted));
+        display: flex; align-items: center; justify-content: center;
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Pulse Loader */
+    .loader-pulse {
+        width: 16px; height: 16px; border-radius: 50%;
+        background: currentColor; position: relative;
+    }
+    .loader-pulse::after {
+        content: ''; position: absolute; inset: 0;
+        border-radius: 50%; background: currentColor;
+        animation: pulse 1s ease-in-out infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(0.9); opacity: 1; }
+        100% { transform: scale(2.5); opacity: 0; }
+    }
+
+    /* Fade In */
+    .fade-in {
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .stagger > * {
+        opacity: 0;
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+    .stagger > *:nth-child(1) { animation-delay: 0.1s; }
+    .stagger > *:nth-child(2) { animation-delay: 0.2s; }
+    .stagger > *:nth-child(3) { animation-delay: 0.3s; }
+    .stagger > *:nth-child(4) { animation-delay: 0.4s; }
+
+    #dashboardLoadingScreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    #dashboardLoadingScreen.hidden {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .spinner-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+    }
+
+    /* Advanced Spinner */
+    .advanced-spinner {
+        width: 68px;
+        height: 68px;
+        display: inline-block;
+        position: relative;
+    }
+
+    .advanced-spinner::after,
+    .advanced-spinner::before {
+        content: '';  
+        box-sizing: border-box;
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        border: 3px solid hsl(var(--primary));
+        position: absolute;
+        left: 0;
+        top: 0;
+        animation: animloader 1.2s linear infinite;
+    }
+
+    .advanced-spinner::before {
+        animation-delay: 0s;
+        border-color: hsl(var(--primary));
+        border-top-color: transparent;
+        border-right-color: transparent;
+    }
+
+    .advanced-spinner::after {
+        animation-delay: 0.6s;
+        border-color: hsl(var(--primary) / 0.5);
+        border-left-color: transparent;
+        border-bottom-color: transparent;
+    }
+
+    @keyframes animloader {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }   
+
+    .loading-text {
+        text-align: center;
+    }
+
+    .loading-text h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 0.25rem;
+    }
+
+    .loading-text p {
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Skeleton Loader */
+    .skeleton {
+        background: linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--border)) 50%, hsl(var(--muted)) 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 0.5rem;
+    }
+</style>
+
+<div id="dashboardLoadingScreen">
+    <div class="loading-container">
+        <div class="spinner-wrapper">
+            <div class="advanced-spinner"></div>
         </div>
-      </div>
-    </div>
-
-    <div class="bg-white dark:bg-black overflow-hidden shadow-sm border border-gray-200 dark:border-gray-800 rounded-lg hover:shadow-md transition-shadow duration-200">
-      <div class="px-4 py-5 sm:p-6">
-        <div class="flex items-center">
-          <div class="flex-shrink-0 bg-gray-900 dark:bg-white rounded-md p-3">
-            <i class="fas fa-tasks text-white dark:text-gray-900 text-xl"></i>
-          </div>
-          <div class="ml-5 w-0 flex-1">
-            <dl>
-              <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Kutilayotgan tekshiruvlar</dt>
-              <dd>
-                <div class="text-lg font-semibold text-gray-900 dark:text-white">{{ pending_reviews }}</div>
-              </dd>
-            </dl>
-          </div>
+        <div class="loading-text">
+            <h3>Ma'lumotlar yuklanmoqda</h3>
+            <p>Bir oz kutib turing...</p>
         </div>
-      </div>
     </div>
-
-    <div class="bg-white dark:bg-black overflow-hidden shadow-sm border border-gray-200 dark:border-gray-800 rounded-lg hover:shadow-md transition-shadow duration-200">
-      <div class="px-4 py-5 sm:p-6">
-        <div class="flex items-center">
-          <div class="flex-shrink-0 bg-gray-900 dark:bg-white rounded-md p-3">
-            <i class="fas fa-users text-white dark:text-gray-900 text-xl"></i>
-          </div>
-          <div class="ml-5 w-0 flex-1">
-            <dl>
-              <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Guruhlar</dt>
-              <dd>
-                <div class="text-lg font-semibold text-gray-900 dark:text-white">{{ mentor_groups.count }}</div>
-              </dd>
-            </dl>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-white dark:bg-black overflow-hidden shadow-sm border border-gray-200 dark:border-gray-800 rounded-lg hover:shadow-md transition-shadow duration-200">
-      <div class="px-4 py-5 sm:p-6">
-        <div class="flex items-center">
-          <div class="flex-shrink-0 bg-gray-900 dark:bg-white rounded-md p-3">
-            <i class="fas fa-history text-white dark:text-gray-900 text-xl"></i>
-          </div>
-          <div class="ml-5 w-0 flex-1">
-            <dl>
-              <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">So'nggi urinishlar</dt>
-              <dd>
-                <div class="text-lg font-semibold text-gray-900 dark:text-white">{{ recent_attempts.count }}</div>
-              </dd>
-            </dl>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="mt-8 bg-white dark:bg-black shadow-sm border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
-    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-800">
-      <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">So'nggi urinishlar</h3>
-      <p class="mt-1 max-w-2xl text-sm text-gray-600 dark:text-gray-400">Talabalarning so'nggi test urinishlari</p>
-    </div>
-
-    {% if recent_attempts %}
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
-        <thead class="bg-gray-50 dark:bg-gray-800">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-              Talaba
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-              Test
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-              Holat
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-              Ball
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-              Sana
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-              Amal
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white dark:bg-black divide-y divide-gray-200 dark:divide-gray-800">
-          {% for attempt in recent_attempts %}
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150">
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <div class="flex-shrink-0 h-10 w-10">
-                  <div class="h-10 w-10 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center text-white dark:text-gray-900 font-semibold">
-                    {{ attempt.student.first_name|first|upper }}{{ attempt.student.last_name|first|upper }}
-                  </div>
-                </div>
-                <div class="ml-4">
-                  <div class="text-sm font-medium text-gray-900 dark:text-white">
-                    {{ attempt.student.get_full_name|default:attempt.student.username }}
-                  </div>
-                </div>
-              </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm text-gray-900 dark:text-white">{{ attempt.exam.title }}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              {% if attempt.status == 'completed' %}
-              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">Tugallangan</span>
-              {% elif attempt.status == 'submitted' %}
-              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">Yuborilgan</span>
-              {% else %}
-              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">Jarayonda</span>
-              {% endif %}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-              {{ attempt.total_score|default:"-" }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-              {{ attempt.created_at|date:"d.m.Y H:i" }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              {% if attempt.status == 'submitted' and attempt.exam.section_type in 'writing,speaking' %}
-              <a href="{% url 'review_attempt' attempt.id %}" class="text-gray-900 dark:text-white hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-150">Tekshirish</a>
-              {% elif attempt.status == 'completed' and attempt.exam.section_type in 'reading,listening' %}
-              <a href="{% url 'attempt_detail' attempt.id %}" class="text-gray-900 dark:text-white hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-150">Natijani ko'rish</a>
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="px-4 py-12 text-center">
-      <i class="fas fa-inbox text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
-      <p class="text-gray-600 dark:text-gray-400">Hozircha urinishlar yo'q.</p>
-    </div>
-    {% endif %}
-  </div>
 </div>
+
+<div class="max-w-7xl mx-auto p-6 space-y-8 fade-in" id="dashboardContent">
+
+    <!-- Header -->
+    <div class="space-y-2">
+        <h1 class="text-3xl font-extrabold text-foreground">Salom, {{ user.get_full_name|default:user.username }}!</h1>
+        <p class="text-muted">Mentor paneli • Talabalar faoliyatini kuzatish</p>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger">
+        <div class="card rounded-2xl p-6 card-hover">
+            <div class="flex items-center space-x-4">
+                <div class="icon-container">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-muted">Talabalar</p>
+                    <p class="text-2xl font-bold text-foreground mt-1">{{ total_students|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card rounded-2xl p-6 card-hover">
+            <div class="flex items-center space-x-4">
+                <div class="icon-container">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-muted">Kutilayotgan tekshiruvlar</p>
+                    <p class="text-2xl font-bold text-foreground mt-1">{{ pending_reviews|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card rounded-2xl p-6 card-hover">
+            <div class="flex items-center space-x-4">
+                <div class="icon-container">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-muted">Guruhlar</p>
+                    <p class="text-2xl font-bold text-foreground mt-1">{{ mentor_groups.count|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card rounded-2xl p-6 card-hover">
+            <div class="flex items-center space-x-4">
+                <div class="icon-container">
+                    <i class="fas fa-history"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-muted">So'nggi urinishlar</p>
+                    <p class="text-2xl font-bold text-foreground mt-1">{{ recent_attempts.count|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Attempts Table -->
+    <div class="card rounded-2xl overflow-hidden">
+        <div class="px-6 py-5 border-b border-border">
+            <h3 class="text-lg font-semibold text-foreground">So'nggi urinishlar</h3>
+            <p class="text-sm text-muted mt-1">Talabalarning so'nggi test urinishlari</p>
+        </div>
+
+        {% if recent_attempts %}
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[800px]">
+                <thead class="table-header">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Talaba</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Test</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Holat</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Ball</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Sana</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Amal</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    {% for attempt in recent_attempts %}
+                    <tr class="table-row">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center space-x-3">
+                                <div class="avatar">
+                                    {{ attempt.student.first_name|first|upper }}{{ attempt.student.last_name|first|upper }}
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-foreground">
+                                        {{ attempt.student.get_full_name|default:attempt.student.username }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-foreground">{{ attempt.exam.title }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if attempt.status == 'completed' %}
+                                <span class="badge badge-completed">Tugallangan</span>
+                            {% elif attempt.status == 'submitted' %}
+                                <span class="badge badge-submitted">Yuborilgan</span>
+                            {% else %}
+                                <span class="badge badge-in-progress">Jarayonda</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                            {{ attempt.total_score|default:"—" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                            {{ attempt.created_at|date:"d.m.Y H:i" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            {% if attempt.status == 'submitted' and attempt.exam.section_type in 'writing,speaking' %}
+                                <a href="{% url 'attempts:review_attempt' attempt.id %}" class="btn-link font-medium">Tekshirish</a>
+                            {% elif attempt.status == 'completed' and attempt.exam.section_type in 'reading,listening' %}
+                                <a href="{% url 'attempts:attempt_detail' attempt.id %}" class="btn-link font-medium">Natijani ko'rish</a>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon"><i class="fas fa-inbox text-xl"></i></div>
+            <p class="text-muted">Hozircha urinishlar yo'q.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const loadingScreen = document.getElementById('dashboardLoadingScreen');
+        const dashboardContent = document.getElementById('dashboardContent');
+        
+        function hideLoadingScreen() {
+            if (loadingScreen) loadingScreen.classList.add('hidden');
+            if (dashboardContent) {
+                dashboardContent.style.opacity = '1';
+                dashboardContent.style.visibility = 'visible';
+            }
+        }
+
+        let totalImages = 0, loadedImages = 0;
+        const images = document.querySelectorAll('img');
+        totalImages = images.length;
+
+        if (totalImages === 0) {
+            setTimeout(hideLoadingScreen, 300);
+        } else {
+            images.forEach(img => {
+                img.addEventListener('load', () => {
+                    loadedImages++;
+                    if (loadedImages === totalImages) hideLoadingScreen();
+                });
+                img.addEventListener('error', () => {
+                    loadedImages++;
+                    if (loadedImages === totalImages) hideLoadingScreen();
+                });
+            });
+        }
+
+        window.addEventListener('load', hideLoadingScreen);
+        setTimeout(hideLoadingScreen, 2000);
+
+        // Stagger animation
+        const stats = document.querySelectorAll('.stagger > div');
+        stats.forEach((el, i) => {
+            el.style.animationDelay = `${i * 0.1}s`;
+            el.classList.add('fade-in');
+        });
+
+        // Table rows animation
+        const rows = document.querySelectorAll('.table-row');
+        rows.forEach((row, i) => {
+            row.style.animationDelay = `${0.5 + i * 0.05}s`;
+            row.classList.add('fade-in');
+        });
+
+        // Hover effects
+        document.querySelectorAll('.card-hover').forEach(card => {
+            card.addEventListener('mouseenter', () => card.style.transform = 'translateY(-4px)');
+            card.addEventListener('mouseleave', () => card.style.transform = '');
+        });
+
+        document.querySelectorAll('.table-row').forEach(row => {
+            row.addEventListener('mouseenter', () => row.style.backgroundColor = 'hsl(var(--muted))');
+            row.addEventListener('mouseleave', () => row.style.backgroundColor = '');
+        });
+    });
+</script>
 {% endblock %}

@@ -1,55 +1,575 @@
 {% extends "base.html" %}
-{% block title %}Urinish tafsilotlari{% endblock %}
+{% block title %}Urinish tafsilotlari - {{ attempt.exam.title }}{% endblock %}
 
 {% block content %}
-<div class="py-6">
-    <h1 class="text-2xl font-bold text-text-on-card mb-2">{{ attempt.exam.title }}</h1>
-    <p class="text-subtle mb-4">Boshlangan: {{ attempt.created_at|date:"d.m.Y H:i" }}</p>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    /* Shadcn/ui inspired design tokens */
+    :root {
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 3.9%;
+        --muted: 0 0% 96.1%;
+        --muted-foreground: 0 0% 45.1%;
+        --border: 0 0% 89.8%;
+        --primary: 0 0% 9%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 0 0% 96.1%;
+        --secondary-foreground: 0 0% 9%;
+    }
 
-    <div class="mb-6 flex space-x-6">
-        <span class="text-green-600 font-semibold">✅ To‘g‘ri: {{ correct_count }}</span>
-        <span class="text-red-600 font-semibold">❌ Noto‘g‘ri: {{ incorrect_count }}</span>
-        {% if attempt.total_score %}
-            <span class="font-medium">Ball: {{ attempt.total_score }}/9.0</span>
-        {% endif %}
-    </div>
+    .dark {
+        --card: 0 0% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --muted: 0 0% 14.9%;
+        --muted-foreground: 0 0% 63.9%;
+        --border: 0 0% 14.9%;
+        --primary: 0 0% 98%;
+        --primary-foreground: 0 0% 9%;
+        --secondary: 0 0% 14.9%;
+        --secondary-foreground: 0 0% 98%;
+    }
 
-    <div class="space-y-6">
-        {% for answer in answers %}
-        <div class="bg-card border border-card rounded-lg p-4">
-            <p class="font-medium text-text-on-card mb-2">Savol {{ forloop.counter }}:</p>
-            <p class="mb-2">{{ answer.question.text }}</p>
+    /* Card styles */
+    .card {
+        background-color: hsl(var(--card));
+        color: hsl(var(--card-foreground));
+        border: 1px solid hsl(var(--border));
+    }
 
-            <p class="text-sm">
-                Sizning javobingiz:
-                {% if answer.is_correct %}
-                    <span class="text-green-600 font-semibold">✅ {{ answer.given_answer }}</span>
-                {% else %}
-                    <span class="text-red-600 font-semibold">❌ {{ answer.given_answer }}</span>
-                {% endif %}
-            </p>
+    /* Text styles */
+    .text-card {
+        color: hsl(var(--card-foreground));
+    }
 
-            {% if not answer.is_correct %}
-            <p class="text-sm text-subtle">
-                To‘g‘ri javob: <span class="font-semibold text-green-600">{{ answer.question.correct_answer }}</span>
-            </p>
+    .text-muted {
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Badge styles */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .badge-success {
+        background-color: hsl(142 76% 36% / 0.1);
+        color: hsl(142 76% 36%);
+    }
+
+    .badge-error {
+        background-color: hsl(0 84% 60% / 0.1);
+        color: hsl(0 84% 60%);
+    }
+
+    .badge-neutral {
+        background-color: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Stats cards */
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .stats-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .stat-card {
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        text-align: center;
+        border: 1px solid hsl(var(--border));
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+    }
+
+    .stat-correct { background-color: hsl(142 76% 36% / 0.1); }
+    .stat-incorrect { background-color: hsl(0 84% 60% / 0.1); }
+    .stat-score { background-color: hsl(217 91% 60% / 0.1); }
+
+    /* Charts grid */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    @media (min-width: 1024px) {
+        .charts-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    .chart-card {
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        background-color: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+    }
+
+    .chart-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: hsl(var(--card-foreground));
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 250px;
+        width: 100%;
+    }
+
+    /* Answer card styles */
+    .answer-card {
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        border: 1px solid hsl(var(--border));
+        margin-bottom: 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .answer-card.correct {
+        border-left: 4px solid hsl(142 76% 36%);
+        background-color: hsl(142 76% 36% / 0.05);
+    }
+
+    .answer-card.incorrect {
+        border-left: 4px solid hsl(0 84% 60%);
+        background-color: hsl(0 84% 60% / 0.05);
+    }
+
+    .question-number {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 0.5rem;
+    }
+
+    .question-text {
+        font-weight: 500;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+
+    .answer-section {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    @media (min-width: 640px) {
+        .answer-section {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    .answer-item {
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid hsl(var(--border));
+    }
+
+    .answer-given {
+        background-color: hsl(var(--muted));
+    }
+
+    .answer-correct {
+        background-color: hsl(142 76% 36% / 0.1);
+        border-color: hsl(142 76% 36% / 0.3);
+    }
+
+    /* Button styles */
+    .btn-secondary {
+        background-color: hsl(var(--secondary));
+        color: hsl(var(--secondary-foreground));
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid hsl(var(--border));
+    }
+
+    .btn-secondary:hover {
+        background-color: hsl(var(--secondary) / 0.8);
+        transform: translateY(-1px);
+    }
+
+    /* Progress bar */
+    .progress-bar {
+        width: 100%;
+        height: 0.5rem;
+        background-color: hsl(var(--muted));
+        border-radius: 9999px;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+
+    .progress-fill {
+        height: 100%;
+        border-radius: 9999px;
+        background-color: hsl(142 76% 36%);
+        transition: width 0.3s ease;
+    }
+
+    /* Animations */
+    .fade-in {
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .stagger-animation > * {
+        opacity: 0;
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    .stagger-animation > *:nth-child(1) { animation-delay: 0.1s; }
+    .stagger-animation > *:nth-child(2) { animation-delay: 0.2s; }
+    .stagger-animation > *:nth-child(3) { animation-delay: 0.3s; }
+</style>
+
+<div class="space-y-8 fade-in">
+    <!-- Header Section -->
+    <div class="space-y-4">
+        <div class="flex items-center justify-between">
+            <div class="space-y-2">
+                <h1 class="text-3xl font-bold tracking-tight text-card">{{ attempt.exam.title }}</h1>
+                <p class="text-muted">Urinish tafsilotlari</p>
+            </div>
+            <span class="badge badge-neutral">
+                {{ attempt.exam.get_section_type_display }}
+            </span>
+        </div>
+
+        <div class="flex items-center gap-4 text-sm text-muted">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-calendar w-4 h-4"></i>
+                <span>Boshlangan: {{ attempt.created_at|date:"d.m.Y H:i" }}</span>
+            </div>
+            {% if attempt.completed_at %}
+            <div class="flex items-center gap-2">
+                <i class="fas fa-check-circle w-4 h-4"></i>
+                <span>Yakunlangan: {{ attempt.completed_at|date:"d.m.Y H:i" }}</span>
+            </div>
             {% endif %}
         </div>
-        {% endfor %}
     </div>
 
-    <div class="mt-6">
+    <!-- Statistics Cards -->
+    <div class="stats-container stagger-animation">
+        <div class="stat-card stat-correct">
+            <div class="stat-value text-green-600">{{ correct_count }}</div>
+            <div class="stat-label">To'g'ri javoblar</div>
+        </div>
+        <div class="stat-card stat-incorrect">
+            <div class="stat-value text-red-600">{{ incorrect_count }}</div>
+            <div class="stat-label">Noto'g'ri javoblar</div>
+        </div>
+        <div class="stat-card stat-score">
+            <div class="stat-value text-blue-600">
+                {% if attempt.total_score %}{{ attempt.total_score }}{% else %}-{% endif %}
+            </div>
+            <div class="stat-label">Umumiy ball</div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-grid">
+        <!-- Results Distribution Chart -->
+        <div class="chart-card">
+            <h3 class="chart-title">Natijalar taqsimoti</h3>
+            <div class="chart-container">
+                <canvas id="resultsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Question Analysis Chart -->
+        <div class="chart-card">
+            <h3 class="chart-title">Savollar tahlili</h3>
+            <div class="chart-container">
+                <canvas id="analysisChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Summary -->
+    <div class="card rounded-xl p-6">
+        <h3 class="text-lg font-semibold text-card mb-4">Natija tahlili</h3>
+        <div class="space-y-3">
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-card">Muvaffaqiyat darajasi</span>
+                <span class="text-sm font-semibold text-card">
+                    {{ success_percentage|default:"0" }}%
+                </span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ success_percentage|default:'0' }}%"></div>
+            </div>
+            <div class="flex justify-between text-xs text-muted">
+                <span>{{ correct_count }} ta to'g'ri</span>
+                <span>{{ answers|length }} ta savol</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Insights -->
+    <div class="card rounded-xl p-6">
+        <h3 class="text-lg font-semibold text-card mb-4">Performance Insights</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+                <h4 class="font-medium text-card">Kuchli tomonlaringiz:</h4>
+                <ul class="text-sm text-muted space-y-1">
+                    {% if correct_count > incorrect_count %}
+                    <li class="flex items-center gap-2">
+                        <i class="fas fa-check text-green-500 w-4 h-4"></i>
+                        <span>Ko'pchilik savollarga to'g'ri javob berdingiz</span>
+                    </li>
+                    {% endif %}
+                    {% if success_percentage >= 80 %}
+                    <li class="flex items-center gap-2">
+                        <i class="fas fa-star text-yellow-500 w-4 h-4"></i>
+                        <span>Yuqori muvaffaqiyat darajasi ({{ success_percentage }}%)</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+            <div class="space-y-2">
+                <h4 class="font-medium text-card">Takomillashtirish joylari:</h4>
+                <ul class="text-sm text-muted space-y-1">
+                    {% if incorrect_count > 0 %}
+                    <li class="flex items-center gap-2">
+                        <i class="fas fa-lightbulb text-blue-500 w-4 h-4"></i>
+                        <span>{{ incorrect_count }} ta savolni qayta ko'rib chiqing</span>
+                    </li>
+                    {% endif %}
+                    {% if success_percentage < 70 %}
+                    <li class="flex items-center gap-2">
+                        <i class="fas fa-book text-purple-500 w-4 h-4"></i>
+                        <span>Qo'shimcha mashq va o'qish tavsiya etiladi</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Answers Section -->
+    <div class="space-y-4">
+        <h2 class="text-xl font-semibold text-card">Savol va javoblar</h2>
+        <div class="space-y-4">
+            {% for answer in answers %}
+            <div class="answer-card {% if answer.is_correct %}correct{% else %}incorrect{% endif %} fade-in" 
+                 style="animation-delay: {{ forloop.counter0|add:4 }}00ms">
+                
+                <!-- Question Header -->
+                <div class="question-number">
+                    Savol {{ forloop.counter }}
+                    {% if answer.is_correct %}
+                    <span class="badge badge-success ml-2">To'g'ri</span>
+                    {% else %}
+                    <span class="badge badge-error ml-2">Noto'g'ri</span>
+                    {% endif %}
+                </div>
+
+                <!-- Question Text -->
+                <div class="question-text text-card">
+                    {{ answer.question.text }}
+                </div>
+
+                <!-- Answers Comparison -->
+                <div class="answer-section">
+                    <div class="answer-item answer-given">
+                        <div class="text-xs font-medium text-muted mb-1">Sizning javobingiz</div>
+                        <div class="text-sm font-medium {% if answer.is_correct %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ answer.given_answer }}
+                        </div>
+                    </div>
+
+                    {% if not answer.is_correct %}
+                    <div class="answer-item answer-correct">
+                        <div class="text-xs font-medium text-muted mb-1">To'g'ri javob</div>
+                        <div class="text-sm font-medium text-green-600">
+                            {{ answer.question.correct_answer }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="flex justify-between items-center pt-6 border-t border-border">
         {% if user.profile.role == 'mentor' %}
-        <a href="{% url 'mentor_dashboard' %}"
-           class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
-            ⬅️ Mentor paneliga qaytish
+        <a href="{% url 'accounts:mentor_dashboard' %}" class="btn-secondary">
+            <i class="fas fa-arrow-left w-4 h-4"></i>
+            Mentor paneliga qaytish
         </a>
         {% else %}
-        <a href="{% url 'my_attempts' %}"
-           class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
-            ⬅️ Urinishlar ro'yxatiga qaytish
+        <a href="{% url 'attempts:my_attempts' %}" class="btn-secondary">
+            <i class="fas fa-arrow-left w-4 h-4"></i>
+            Urinishlar ro'yxatiga qaytish
         </a>
         {% endif %}
+
+        <!-- Additional actions -->
+        <div class="flex items-center gap-4 text-sm text-muted">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-info-circle w-4 h-4"></i>
+                <span>{{ answers|length }} ta savol</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <i class="fas fa-clock w-4 h-4"></i>
+                <span>{{ attempt_time }} daqiqa</span>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add animations to cards
+        const cards = document.querySelectorAll('.card, .answer-card');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.classList.add('fade-in');
+        });
+
+        // Calculate success percentage
+        const totalQuestions = {{ answers|length }};
+        const correctAnswers = {{ correct_count }};
+        const incorrectAnswers = {{ incorrect_count }};
+        const successPercentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+
+        // Initialize Charts
+        initializeCharts(correctAnswers, incorrectAnswers, successPercentage);
+
+        // Animate progress bar
+        const progressBar = document.querySelector('.progress-fill');
+        if (progressBar) {
+            progressBar.style.width = '0%';
+            setTimeout(() => {
+                progressBar.style.width = `${successPercentage}%`;
+            }, 500);
+        }
+    });
+
+    function initializeCharts(correct, incorrect, successRate) {
+        // Results Distribution Chart (Doughnut)
+        const resultsCtx = document.getElementById('resultsChart').getContext('2d');
+        new Chart(resultsCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['To\'g\'ri javoblar', 'Noto\'g\'ri javoblar'],
+                datasets: [{
+                    data: [correct, incorrect],
+                    backgroundColor: [
+                        'rgba(34, 197, 94, 0.8)',
+                        'rgba(239, 68, 68, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgb(34, 197, 94)',
+                        'rgb(239, 68, 68)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+
+        // Analysis Chart (Bar)
+        const analysisCtx = document.getElementById('analysisChart').getContext('2d');
+        new Chart(analysisCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Muvaffaqiyat'],
+                datasets: [{
+                    label: 'Foiz',
+                    data: [successRate],
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: 'rgb(59, 130, 246)',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Muvaffaqiyat: ${context.parsed.y}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
 {% endblock %}

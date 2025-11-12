@@ -1,186 +1,388 @@
 {% extends 'base.html' %}
-
 {% block title %}Testlar - EduBase{% endblock %}
 
 {% block content %}
 <style>
-    /* Custom light/dark mode classes for this page */
-    .light .bg-card {
-        background-color: #FFFFFF;
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 0 0% 3.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 3.9%;
+        --muted: 0 0% 96.1%;
+        --muted-foreground: 0 0% 45.1%;
+        --border: 0 0% 89.8%;
+        --primary: 0 0% 9%;
+        --primary-foreground: 0 0% 98%;
+        --radius: 0.75rem;
     }
-    .dark .bg-card {
-        background-color: #1A1A1A;
+
+    .dark {
+        --background: 0 0% 3.9%;
+        --foreground: 0 0% 98%;
+        --card: 0 0% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --muted: 0 0% 14.9%;
+        --muted-foreground: 0 0% 63.9%;
+        --border: 0 0% 14.9%;
+        --primary: 0 0% 98%;
+        --primary-foreground: 0 0% 9%;
     }
-    .light .border-card {
-        border-color: #E0E0E0;
+
+    * {
+        border-color: hsl(var(--border));
     }
-    .dark .border-card {
-        border-color: #333333;
+
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'Inter', system-ui, sans-serif;
     }
-    .light .text-on-card {
-        color: #000000;
+
+    .card {
+        background-color: hsl(var(--card));
+        color: hsl(var(--card-foreground));
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        transition: all 0.25s ease;
     }
-    .dark .text-on-card {
-        color: #FFFFFF;
+
+    .card-hover {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .light .text-subtle {
-        color: #555555;
+    .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px hsl(var(--foreground) / 0.1), 0 10px 10px -5px hsl(var(--foreground) / 0.04);
     }
-    .dark .text-subtle {
-        color: #AAAAAA;
+
+    .text-muted { color: hsl(var(--muted-foreground)); }
+
+    .btn-filter {
+        padding: 0.5rem 1rem;
+        border-radius: calc(var(--radius) - 0.25rem);
+        font-size: 0.875rem;
+        font-weight: 500;
+        border: 1px solid hsl(var(--border));
+        background-color: hsl(var(--card));
+        color: hsl(var(--muted-foreground));
+        transition: all 0.2s ease;
+        cursor: pointer;
     }
-    /* Buttons colors */
-    .btn-active {
-        background-color: #000000;
-        color: #FFFFFF;
-        border-color: #000000;
+    .btn-filter.active {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        border-color: hsl(var(--primary));
     }
-    .dark .btn-active {
-        background-color: #FFFFFF;
-        color: #000000;
-        border-color: #FFFFFF;
+    .btn-filter:hover:not(.active) {
+        background-color: hsl(var(--muted));
+        color: hsl(var(--card-foreground));
     }
-    .btn-inactive {
-        background-color: #FFFFFF;
-        color: #555555;
-        border-color: #E0E0E0;
+
+    .btn-primary {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        padding: 0.5rem 1rem;
+        border-radius: calc(var(--radius) - 0.25rem);
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
     }
-    .dark .btn-inactive {
-        background-color: #1A1A1A;
-        color: #AAAAAA;
-        border-color: #333333;
+    .btn-primary:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
     }
-    .btn-inactive:hover {
-        background-color: #F7F7F7;
+
+    .btn-success {
+        background-color: hsl(142 76% 36%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: calc(var(--radius) - 0.25rem);
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
     }
-    .dark .btn-inactive:hover {
-        background-color: #222222;
+    .btn-success:hover {
+        background-color: hsl(142 76% 32%);
+        transform: translateY(-1px);
+    }
+
+    .badge {
+        display: inline-flex; align-items: center;
+        padding: 0.25rem 0.75rem; border-radius: 9999px;
+        font-size: 0.75rem; font-weight: 500;
+    }
+    .badge-new { background: hsl(217 91% 60% / 0.1); color: hsl(217 91% 60%); }
+    .badge-completed { background: hsl(142 76% 36% / 0.1); color: hsl(142 76% 36%); }
+    .badge-section { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+
+    .empty-state {
+        text-align: center; padding: 4rem 1rem;
+    }
+    .empty-state-icon {
+        width: 4rem; height: 4rem; margin: 0 auto 1rem;
+        border-radius: 1rem; background: hsl(var(--muted));
+        display: flex; align-items: center; justify-content: center;
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Section colors */
+    .section-reading { border-left: 4px solid hsl(217 91% 60%); }
+    .section-listening { border-left: 4px solid hsl(142 76% 36%); }
+    .section-writing { border-left: 4px solid hsl(45 93% 47%); }
+    .section-speaking { border-left: 4px solid hsl(345 83% 41%); }
+
+    /* Fade In */
+    .fade-in {
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .stagger > * {
+        opacity: 0;
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+    .stagger > *:nth-child(1) { animation-delay: 0.1s; }
+    .stagger > *:nth-child(2) { animation-delay: 0.2s; }
+    .stagger > *:nth-child(3) { animation-delay: 0.3s; }
+    .stagger > *:nth-child(4) { animation-delay: 0.4s; }
+    .stagger > *:nth-child(5) { animation-delay: 0.5s; }
+    .stagger > *:nth-child(6) { animation-delay: 0.6s; }
+
+
+    #dashboardLoadingScreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    #dashboardLoadingScreen.hidden {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .spinner-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+    }
+
+    /* Advanced Spinner */
+    .advanced-spinner {
+        width: 68px;
+        height: 68px;
+        display: inline-block;
+        position: relative;
+    }
+
+    .advanced-spinner::after,
+    .advanced-spinner::before {
+        content: '';  
+        box-sizing: border-box;
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        border: 3px solid hsl(var(--primary));
+        border-top-color: transparent;
+        border-right-color: transparent;
+        position: absolute;
+        left: 0;
+        top: 0;
+        animation: animloader 1.2s linear infinite;
+    }
+
+    .advanced-spinner::before {
+        animation-delay: 0s;
+        border-color: hsl(var(--primary));
+        border-right-color: transparent;
+        border-bottom-color: transparent;
+    }
+
+    .advanced-spinner::after {
+        animation-delay: 0.6s;
+        border-color: hsl(var(--primary) / 0.5);
+        border-left-color: transparent;
+        border-bottom-color: transparent;
+    }
+
+    @keyframes animloader {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }   
+
+    .loading-text {
+        text-align: center;
+    }
+
+    .loading-text h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 0.25rem;
+    }
+
+    .loading-text p {
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Skeleton Loader */
+    .skeleton {
+        background: linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--border)) 50%, hsl(var(--muted)) 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 0.5rem;
+    }
+
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    .skeleton-stat {
+        height: 120px;
+        border-radius: 1rem;
+    }
+
+    .skeleton-card {
+        height: 200px;
+        border-radius: 1rem;
+    }
+
+    .skeleton-item {
+        height: 60px;
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
     }
 </style>
 
-<div class="">
-    <div class="px-4 sm:px-0">
-        <h1 class="text-3xl font-bold text-text-on-card">Mavjud testlar</h1>
-        <p class="mt-2 text-subtle">Sizga tayinlangan barcha testlar</p>
+<div id="dashboardLoadingScreen">
+    <div class="loading-container">
+        <div class="spinner-wrapper">
+            <div class="advanced-spinner"></div>
+        </div>
+        <div class="loading-text">
+            <h3>Ma'lumotlar yuklanmoqda</h3>
+            <p>Bir oz kutib turing...</p>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-7xl mx-auto p-6 space-y-8 fade-in">
+
+    <!-- Header -->
+    <div class="space-y-2">
+        <h1 class="text-3xl font-extrabold text-foreground">Mavjud testlar</h1>
+        <p class="text-muted">Sizga tayinlangan barcha testlar</p>
     </div>
 
-    <div class="mt-6 px-4 sm:px-0 space-y-4">
+    <!-- Filters -->
+    <div class="space-y-4">
         <div class="flex flex-wrap gap-2">
-            <button onclick="filterStatus('all', event)" class="status-btn px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 btn-active">
-                Barcha testlar
-            </button>
-            <button onclick="filterStatus('new', event)" class="status-btn px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 btn-inactive">
-                Yangi testlar
-            </button>
-            <button onclick="filterStatus('completed', event)" class="status-btn px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 btn-inactive">
-                Ishlangan testlar
-            </button>
+            <button onclick="filterStatus('all', this)" class="btn-filter active">Barcha testlar</button>
+            <button onclick="filterStatus('new', this)" class="btn-filter">Yangi testlar</button>
+            <button onclick="filterStatus('completed', this)" class="btn-filter">Ishlangan testlar</button>
         </div>
-
         <div class="flex flex-wrap gap-2">
-            <button onclick="filterSection('all', event)" class="section-btn px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 btn-active">
-                Barchasi
-            </button>
-            <button onclick="filterSection('reading', event)" class="section-btn px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 btn-inactive">
-                Reading
-            </button>
-            <button onclick="filterSection('listening', event)" class="section-btn px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 btn-inactive">
-                Listening
-            </button>
-            <button onclick="filterSection('writing', event)" class="section-btn px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 btn-inactive">
-                Writing
-            </button>
-            <button onclick="filterSection('speaking', event)" class="section-btn px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 btn-inactive">
-                Speaking
-            </button>
+            <button onclick="filterSection('all', this)" class="btn-filter active">Barchasi</button>
+            <button onclick="filterSection('reading', this)" class="btn-filter">Reading</button>
+            <button onclick="filterSection('listening', this)" class="btn-filter">Listening</button>
+            <button onclick="filterSection('writing', this)" class="btn-filter">Writing</button>
+            <button onclick="filterSection('speaking', this)" class="btn-filter">Speaking</button>
         </div>
     </div>
 
-    <div class="mt-8 px-4 sm:px-0">
-        <div id="exam-container" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {% for exam_info in exam_data %}
-            <div
-                class="exam-card bg-card border border-card rounded-xl p-6 hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
-                data-type="{{ exam_info.assignment.exam.section_type }}" data-status="{{ exam_info.status }}">
+    <!-- Exams Grid -->
+    <div id="exam-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger">
+        {% for exam_info in exam_data %}
+        <div class="exam-card card rounded-2xl p-6 card-hover section-{{ exam_info.assignment.exam.section_type }}"
+             data-type="{{ exam_info.assignment.exam.section_type }}" 
+             data-status="{% if exam_info.status == 'completed' %}completed{% else %}new{% endif %}">
 
-                <div class="flex items-start justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-text-on-card leading-tight">
-                        {{ exam_info.assignment.exam.title }}
-                    </h3>
-                    <div class="flex flex-col items-end gap-2">
-                        {% if exam_info.status == 'completed' %}
-                        <span
-                            class="px-2 py-1 text-xs font-medium rounded-full bg-green-200 text-green-800 dark:bg-green-700 dark:text-green-200">
-                            Ishlangan
-                        </span>
-                        {% else %}
-                        <span
-                            class="px-2 py-1 text-xs font-medium rounded-full bg-blue-200 text-blue-800 dark:bg-blue-700 dark:text-blue-200">
-                            Yangi
-                        </span>
-                        {% endif %}
-
-                        <span class="px-3 py-1 text-xs font-medium rounded-full shrink-0 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                            {{ exam_info.assignment.exam.get_section_type_display }}
-                        </span>
-                    </div>
-                </div>
-
-                <p class="text-sm text-subtle mb-6 leading-relaxed">
-                    {{ exam_info.assignment.exam.description|truncatewords:15 }}
-                </p>
-
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center text-sm text-subtle">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        {{ exam_info.assignment.exam.time_limit }} daqiqa
-                    </div>
-
+            <div class="flex items-start justify-between mb-4">
+                <h3 class="text-lg font-semibold text-foreground leading-tight flex-1 pr-2">
+                    {{ exam_info.assignment.exam.title }}
+                </h3>
+                <div class="flex flex-col items-end gap-2 shrink-0">
                     {% if exam_info.status == 'completed' %}
-                    <a href="{% url 'exam_detail' exam_info.assignment.exam.id %}"
-                        class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 rounded-lg transition-colors duration-200">
-                        Natijani ko'rish
-                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </a>
+                        <span class="badge badge-completed">Ishlangan</span>
                     {% else %}
-                    <a href="{% url 'exam_detail' exam_info.assignment.exam.id %}"
-                        class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-lg transition-colors duration-200">
-                        Boshlash
-                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </a>
+                        <span class="badge badge-new">Yangi</span>
                     {% endif %}
+                    <span class="badge badge-section">
+                        {{ exam_info.assignment.exam.get_section_type_display }}
+                    </span>
                 </div>
             </div>
-            {% empty %}
-            <div class="col-span-full">
-                <div class="text-center py-16">
-                    <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
-                        </path>
-                    </svg>
-                    <h3 class="text-lg font-medium text-text-on-card mb-2">Testlar topilmadi</h3>
-                    <p class="text-subtle">Hozircha sizga tayinlangan testlar yo'q.</p>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
 
-        <div id="no-results" class="hidden text-center py-16">
-            <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor"
-                viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
-            <h3 class="text-lg font-medium text-text-on-card mb-2">Ma'lumot topilmadi</h3>
-            <p class="text-subtle">Tanlangan kategoriyada testlar mavjud emas.</p>
+            <p class="text-sm text-muted mb-6 leading-relaxed line-clamp-3">
+                {{ exam_info.assignment.exam.description|default:"Tavsif mavjud emas."|truncatewords:20 }}
+            </p>
+
+            <div class="flex items-center justify-between pt-4 border-t border-border">
+                <div class="flex items-center text-sm text-muted">
+                    <i class="fas fa-clock w-4 h-4 mr-2"></i>
+                    {{ exam_info.assignment.exam.time_limit }} daqiqa
+                </div>
+
+                {% if exam_info.status == 'completed' %}
+                <a href="{% url 'exam_detail' exam_info.assignment.exam.id %}"
+                   class="btn-success text-xs">
+                    Natijani ko'rish
+                </a>
+                {% else %}
+                <a href="{% url 'exam_detail' exam_info.assignment.exam.id %}"
+                   class="btn-primary text-xs">
+                    Boshlash
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full">
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fas fa-book-open text-xl"></i></div>
+                <h3 class="text-lg font-medium text-foreground mb-2">Testlar topilmadi</h3>
+                <p class="text-muted">Hozircha sizga tayinlangan testlar yo'q.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- No Results -->
+    <div id="no-results" class="hidden">
+        <div class="empty-state">
+            <div class="empty-state-icon"><i class="fas fa-search text-xl"></i></div>
+            <h3 class="text-lg font-medium text-foreground mb-2">Ma'lumot topilmadi</h3>
+            <p class="text-muted">Tanlangan kategoriyada testlar mavjud emas.</p>
         </div>
     </div>
 </div>
@@ -191,51 +393,109 @@
     let allExams = [];
 
     document.addEventListener('DOMContentLoaded', function () {
+        // Loading bo'limini ko'rsatish
+        const loadingScreen = document.getElementById('dashboardLoadingScreen');
+        const mainContent = document.querySelector('.max-w-7xl');
+        
+        function hideLoadingScreen() {
+            if (loadingScreen) {
+                loadingScreen.classList.add('hidden');
+            }
+            if (mainContent) {
+                mainContent.style.opacity = '1';
+                mainContent.style.visibility = 'visible';
+            }
+        }
+
+        // Tasvirlar yuklanmaguncha kuting
+        let totalImages = 0;
+        let loadedImages = 0;
+
+        const images = document.querySelectorAll('img');
+        totalImages = images.length;
+
+        if (totalImages === 0) {
+            setTimeout(hideLoadingScreen, 300);
+        } else {
+            images.forEach(img => {
+                img.addEventListener('load', () => {
+                    loadedImages++;
+                    if (loadedImages === totalImages) {
+                        hideLoadingScreen();
+                    }
+                });
+                img.addEventListener('error', () => {
+                    loadedImages++;
+                    if (loadedImages === totalImages) {
+                        hideLoadingScreen();
+                    }
+                });
+            });
+        }
+
+        // Window load event
+        window.addEventListener('load', hideLoadingScreen);
+
+        // Maksimal 2 soniyadan keyin loading yoq bo'lsin
+        setTimeout(hideLoadingScreen, 2000);
+
+        // Filter script
         allExams = Array.from(document.querySelectorAll('.exam-card'));
-        console.log('[v0] Loaded', allExams.length, 'exams');
+        
+        // Initial animation
+        const visible = allExams.filter(e => e.style.display !== 'none');
+        visible.forEach((card, i) => {
+            card.style.animationDelay = `${i * 0.1}s`;
+            card.classList.add('fade-in');
+        });
     });
 
-    function filterStatus(status, event) {
+    function filterStatus(status, btn) {
         currentStatus = status;
-        updateButtonStates('.status-btn', event.currentTarget);
+        updateActive(btn);
         applyFilters();
     }
 
-    function filterSection(section, event) {
+    function filterSection(section, btn) {
         currentSection = section;
-        updateButtonStates('.section-btn', event.currentTarget);
+        updateActive(btn);
         applyFilters();
     }
 
-    function updateButtonStates(selector, activeButton) {
-        document.querySelectorAll(selector).forEach(btn => {
-            btn.classList.remove('btn-active');
-            btn.classList.add('btn-inactive');
-        });
-        activeButton.classList.remove('btn-inactive');
-        activeButton.classList.add('btn-active');
+    function updateActive(activeBtn) {
+        const group = activeBtn.parentElement;
+        group.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+        activeBtn.classList.add('active');
     }
 
     function applyFilters() {
-        let visibleCount = 0;
-
+        let visible = 0;
         allExams.forEach(exam => {
-            const statusMatch = (currentStatus === 'all' || exam.dataset.status === currentStatus);
-            const sectionMatch = (currentSection === 'all' || exam.dataset.type === currentSection);
-            const shouldShow = statusMatch && sectionMatch;
-
-            exam.style.display = shouldShow ? 'block' : 'none';
-            if (shouldShow) visibleCount++;
+            const statusOk = currentStatus === 'all' || exam.dataset.status === currentStatus;
+            const sectionOk = currentSection === 'all' || exam.dataset.type === currentSection;
+            if (statusOk && sectionOk) {
+                exam.style.display = 'block';
+                visible++;
+            } else {
+                exam.style.display = 'none';
+            }
         });
 
+        const container = document.getElementById('exam-container');
         const noResults = document.getElementById('no-results');
-        if (visibleCount === 0) {
+        if (visible === 0) {
             noResults.classList.remove('hidden');
+            container.classList.add('hidden');
         } else {
             noResults.classList.add('hidden');
+            container.classList.remove('hidden');
+            // Re-animate
+            const visibleCards = allExams.filter(e => e.style.display !== 'none');
+            visibleCards.forEach((card, i) => {
+                card.style.animationDelay = `${i * 0.1}s`;
+                card.classList.add('fade-in');
+            });
         }
-
-        console.log('[v0] Filtered:', visibleCount, 'visible exams');
     }
 </script>
 {% endblock %}

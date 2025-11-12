@@ -1,0 +1,768 @@
+{% extends 'base.html' %}
+
+{% block title %}Mentor Statistikasi - EduBase{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    :root {
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 3.9%;
+        --muted: 0 0% 96.1%;
+        --muted-foreground: 0 0% 45.1%;
+        --border: 0 0% 89.8%;
+        --primary: 0 0% 9%;
+        --primary-foreground: 0 0% 98%;
+        --accent: 0 0% 96.1%;
+        --accent-foreground: 0 0% 9%;
+    }
+
+    .dark {
+        --card: 0 0% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --muted: 0 0% 14.9%;
+        --muted-foreground: 0 0% 63.9%;
+        --border: 0 0% 14.9%;
+        --primary: 0 0% 98%;
+        --primary-foreground: 0 0% 9%;
+        --accent: 0 0% 14.9%;
+        --accent-foreground: 0 0% 98%;
+    }
+
+    /* Asosiy stil */
+    body {
+        font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    .card {
+        background-color: hsl(var(--card));
+        color: hsl(var(--card-foreground));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+    }
+
+    .text-card {
+        color: hsl(var(--card-foreground));
+    }
+
+    .text-muted {
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Progress bar */
+    .progress-container {
+        background-color: hsl(var(--muted));
+        border-radius: 8px;
+        overflow: hidden;
+        height: 8px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        border-radius: 8px;
+        transition: width 0.5s ease;
+    }
+
+    .progress-reading { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .progress-listening { background: linear-gradient(90deg, #10b981, #34d399); }
+    .progress-writing { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .progress-speaking { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+    /* Guruh kartalari */
+    .group-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+
+    .group-header {
+        background: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--muted)));
+        border-bottom: 1px solid hsl(var(--border));
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .group-header:hover {
+        background: linear-gradient(135deg, hsl(var(--accent) / 0.9), hsl(var(--muted) / 0.9));
+    }
+
+    .group-content {
+        transition: all 0.3s ease;
+    }
+
+    .group-collapsed .group-content {
+        display: none;
+    }
+
+    .group-toggle {
+        transition: transform 0.3s ease;
+    }
+
+    .group-collapsed .group-toggle {
+        transform: rotate(-90deg);
+    }
+
+    /* Talaba kartalari */
+    .student-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.25rem;
+        padding: 1.5rem;
+    }
+
+    .student-card {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none !important;
+        color: inherit !important;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .student-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #3b82f6, #10b981, #f59e0b, #ef4444);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .student-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        border-color: hsl(var(--primary) / 0.3);
+    }
+
+    .student-card:hover::before {
+        opacity: 1;
+    }
+
+    .student-avatar {
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 50%;
+        background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8));
+        color: hsl(var(--primary-foreground));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.125rem;
+        margin-bottom: 1rem;
+        border: 3px solid hsl(var(--accent));
+    }
+
+    /* Statistik kartalari */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--muted)));
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid hsl(var(--border));
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: hsl(var(--card-foreground));
+        line-height: 1;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: hsl(var(--muted-foreground));
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Bo'lim progress */
+    .section-progress-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .section-card {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .section-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .section-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.125rem;
+        margin-right: 0.75rem;
+    }
+
+    .icon-reading { background: #dbeafe; color: #1d4ed8; }
+    .icon-listening { background: #dcfce7; color: #166534; }
+    .icon-writing { background: #fef3c7; color: #92400e; }
+    .icon-speaking { background: #fee2e2; color: #991b1b; }
+
+    .dark .icon-reading { background: #1e3a8a; color: #dbeafe; }
+    .dark .icon-listening { background: #064e3b; color: #dcfce7; }
+    .dark .icon-writing { background: #78350f; color: #fef3c7; }
+    .dark .icon-speaking { background: #7f1d1d; color: #fee2e2; }
+
+    /* Mini statistik */
+    .mini-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin: 1rem 0;
+    }
+
+    .mini-stat {
+        background: hsl(var(--accent));
+        padding: 0.75rem;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .mini-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: hsl(var(--card-foreground));
+        line-height: 1;
+    }
+
+    .mini-label {
+        font-size: 0.75rem;
+        color: hsl(var(--muted-foreground));
+        margin-top: 0.25rem;
+    }
+
+    /* Tugmalar */
+    .btn-primary {
+        background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.9));
+        color: hsl(var(--primary-foreground));
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Animatsiyalar */
+    .fade-in {
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .stagger-animation > * {
+        opacity: 0;
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+
+    .stagger-animation > *:nth-child(1) { animation-delay: 0.1s; }
+    .stagger-animation > *:nth-child(2) { animation-delay: 0.2s; }
+    .stagger-animation > *:nth-child(3) { animation-delay: 0.3s; }
+    .stagger-animation > *:nth-child(4) { animation-delay: 0.4s; }
+
+    /* Bo'sh holat */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1.5rem;
+    }
+
+    .empty-state-icon {
+        width: 5rem;
+        height: 5rem;
+        margin: 0 auto 1.5rem;
+        border-radius: 16px;
+        background: hsl(var(--muted));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: hsl(var(--muted-foreground));
+        font-size: 2rem;
+    }
+
+    #dashboardLoadingScreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    #dashboardLoadingScreen.hidden {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .spinner-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+    }
+
+    /* Advanced Spinner */
+    .advanced-spinner {
+        width: 68px;
+        height: 68px;
+        display: inline-block;
+        position: relative;
+    }
+
+    .advanced-spinner::after,
+    .advanced-spinner::before {
+        content: '';  
+        box-sizing: border-box;
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        border: 3px solid hsl(var(--primary));
+        position: absolute;
+        left: 0;
+        top: 0;
+        animation: animloader 1.2s linear infinite;
+    }
+
+    .advanced-spinner::before {
+        animation-delay: 0s;
+        border-color: hsl(var(--primary));
+        border-top-color: transparent;
+        border-right-color: transparent;
+    }
+
+    .advanced-spinner::after {
+        animation-delay: 0.6s;
+        border-color: hsl(var(--primary) / 0.5);
+        border-left-color: transparent;
+        border-bottom-color: transparent;
+    }
+
+    @keyframes animloader {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }   
+
+    .loading-text {
+        text-align: center;
+    }
+
+    .loading-text h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 0.25rem;
+    }
+
+    .loading-text p {
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Skeleton Loader */
+    .skeleton {
+        background: linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--border)) 50%, hsl(var(--muted)) 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 0.5rem;
+    }
+
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    .skeleton-stat {
+        height: 120px;
+        border-radius: 1rem;
+    }
+
+    .skeleton-card {
+        height: 200px;
+        border-radius: 1rem;
+    }
+
+    .skeleton-item {
+        height: 60px;
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div id="dashboardLoadingScreen">
+    <div class="loading-container">
+        <div class="spinner-wrapper">
+            <div class="advanced-spinner"></div>
+        </div>
+        <div class="loading-text">
+            <h3>Ma'lumotlar yuklanmoqda</h3>
+            <p>Bir oz kutib turing...</p>
+        </div>
+    </div>
+</div>
+
+<div class="space-y-8 fade-in" id="statsContent">
+    <!-- Sarlavha -->
+    <div class="space-y-3">
+        <h1 class="text-4xl font-bold tracking-tight text-card">Mentor Statistikasi</h1>
+        <p class="text-lg text-muted">Guruhlaringiz va talabalaringizning batafsil statistikasi</p>
+    </div>
+
+    <!-- Asosiy statistikalar -->
+    <div class="stats-grid stagger-animation">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_students }}</div>
+            <div class="stat-label">Jami Talabalar</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ total_attempts }}</div>
+            <div class="stat-label">Jami Urinishlar</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ overall_avg_score }}</div>
+            <div class="stat-label">O'rtacha Ball</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ pending_reviews_count }}</div>
+            <div class="stat-label">Baholash Kutayotganlar</div>
+        </div>
+    </div>
+
+    <!-- Bo'limlar bo'yicha progress -->
+    <div class="card p-6">
+        <h2 class="text-2xl font-bold text-card mb-6">Bo'limlar bo'yicha Umumiy Progress</h2>
+        <div class="section-progress-grid">
+            {% for section in section_progress %}
+            <div class="section-card fade-in" style="animation-delay: {{ forloop.counter0|add:2 }}00ms">
+                <div class="section-header">
+                    <div class="flex items-center">
+                        <div class="section-icon icon-{{ section.section_type }}">
+                            <i class="fas fa-{% if section.section_type == 'reading' %}book{% elif section.section_type == 'listening' %}headphones{% elif section.section_type == 'writing' %}pen{% else %}microphone{% endif %}"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-card">{{ section.section_name }}</h3>
+                            <p class="text-sm text-muted">{{ section.unique_students }}/{{ section.total_students }} ta talaba</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-bold text-card">{{ section.avg_score }}</div>
+                        <div class="text-sm text-muted">O'rtacha ball</div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-medium text-card">Progress</span>
+                        <span class="text-card">{{ section.percentage }}%</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-fill progress-{{ section.section_type }}" 
+                             style="width: {{ section.percentage }}%"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-muted">
+                        <span>{{ section.completed_count }} ta bajarilgan</span>
+                        <span>{{ section.total_count }} ta test</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Guruhlar va talabalar -->
+    <div class="space-y-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-2xl font-bold text-card">Guruhlar va Talabalar</h2>
+                <p class="text-muted">Har bir guruhni kengaytirib, talabalarning batafsil statistikasini ko'ring</p>
+            </div>
+        </div>
+
+        {% if groups_with_students %}
+        <div class="space-y-4">
+            {% for group_data in groups_with_students %}
+            <div class="group-card card">
+                <!-- Guruh sarlavhasi -->
+                <div class="group-header p-6" onclick="toggleGroup('group-{{ group_data.group.id }}')">
+                    <div class="flex items-center justify-between w-full">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                <i class="fas fa-users text-white text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-card">{{ group_data.group.name }}</h3>
+                                <div class="flex items-center space-x-4 text-sm text-muted mt-1">
+                                    <span>{{ group_data.students_count }} ta talaba</span>
+                                    <span>•</span>
+                                    <span>{{ group_data.group.created_at|date:"d.m.Y" }} dan</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="group-toggle text-muted">
+                            <i class="fas fa-chevron-down text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guruh kontenti -->
+                <div class="group-content" id="group-{{ group_data.group.id }}">
+                    {% if group_data.students %}
+                    <div class="student-grid">
+                        {% for student_data in group_data.students %}
+                        <a href="{% url 'attempts:mentor_student_stats' student_data.student.id %}" class="student-card">
+                            <!-- Talaba avatari va asosiy ma'lumot -->
+                            <div class="student-avatar">
+                                {{ student_data.student.first_name|first|upper }}{{ student_data.student.last_name|first|upper }}
+                            </div>
+                            
+                            <h4 class="text-lg font-bold text-card mb-1 line-clamp-1">
+                                {{ student_data.student.get_full_name|default:student_data.student.username }}
+                            </h4>
+                            <p class="text-sm text-muted line-clamp-1 mb-4">{{ student_data.student.email }}</p>
+
+                            <!-- Talaba statistikasi -->
+                            <div class="mini-stats">
+                                <div class="mini-stat">
+                                    <div class="mini-value">{{ student_data.total_attempts }}</div>
+                                    <div class="mini-label">Urinish</div>
+                                </div>
+                                <div class="mini-stat">
+                                    <div class="mini-value">{{ student_data.completed_attempts }}</div>
+                                    <div class="mini-label">Bajarilgan</div>
+                                </div>
+                                <div class="mini-stat">
+                                    <div class="mini-value">{{ student_data.avg_score }}</div>
+                                    <div class="mini-label">O'rtacha ball</div>
+                                </div>
+                                <div class="mini-stat">
+                                    <div class="mini-value">
+                                        {% if student_data.total_attempts > 0 %}
+                                        {{ student_data.completed_attempts|floatformat:0 }}/{{ student_data.total_attempts }}
+                                        {% else %}
+                                        0/0
+                                        {% endif %}
+                                    </div>
+                                    <div class="mini-label">Progress</div>
+                                </div>
+                            </div>
+
+                            <!-- Umumiy progress -->
+                            <div class="mt-4">
+                                <div class="flex justify-between text-xs text-muted mb-2">
+                                    <span>Umumiy muvaffaqiyat</span>
+                                    <span>
+                                        {% if student_data.total_attempts > 0 %}
+                                        {{ student_data.completed_attempts }}%
+                                        {% else %}
+                                        0%
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-fill progress-reading" style="width: 
+                                        {% if student_data.total_attempts > 0 %}
+                                        {{ student_data.completed_attempts }}%
+                                        {% else %}
+                                        0%
+                                        {% endif %}
+                                    ;"></div>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <!-- Bo'sh guruh -->
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-card mb-2">Guruhda talabalar yo'q</h3>
+                        <p class="text-muted">Bu guruhga talabalar qo'shilmagan.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Guruhlar yo'q -->
+        <div class="card">
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3 class="text-lg font-medium text-card mb-2">Guruhlar topilmadi</h3>
+                <p class="text-muted mb-4">Sizga hali guruhlar tayinlanmagan.</p>
+                <a href="{% url 'mentor_groups' %}" class="btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Yangi guruh yaratish
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const loadingScreen = document.getElementById('dashboardLoadingScreen');
+        const statsContent = document.getElementById('statsContent');
+        
+        function hideLoadingScreen() {
+            if (loadingScreen) loadingScreen.classList.add('hidden');
+            if (statsContent) {
+                statsContent.style.opacity = '1';
+                statsContent.style.visibility = 'visible';
+            }
+        }
+
+        let totalImages = 0, loadedImages = 0;
+        const images = document.querySelectorAll('img');
+        totalImages = images.length;
+
+        if (totalImages === 0) {
+            setTimeout(hideLoadingScreen, 300);
+        } else {
+            images.forEach(img => {
+                img.addEventListener('load', () => {
+                    loadedImages++;
+                    if (loadedImages === totalImages) hideLoadingScreen();
+                });
+                img.addEventListener('error', () => {
+                    loadedImages++;
+                    if (loadedImages === totalImages) hideLoadingScreen();
+                });
+            });
+        }
+
+        window.addEventListener('load', hideLoadingScreen);
+        setTimeout(hideLoadingScreen, 2000);
+
+        // Kartalarga animatsiya qo'shish
+        const cards = document.querySelectorAll('.card');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.classList.add('fade-in');
+        });
+
+        // Progress barlarni animatsiya qilish
+        animateProgressBars();
+        
+        // Birinchi guruhni ochiq qoldirish
+        const firstGroup = document.querySelector('.group-card');
+        if (firstGroup) {
+            firstGroup.classList.remove('group-collapsed');
+        }
+    });
+
+    function toggleGroup(groupId) {
+        const group = document.getElementById(groupId);
+        const groupCard = group.closest('.group-card');
+        groupCard.classList.toggle('group-collapsed');
+    }
+
+    function animateProgressBars() {
+        const progressBars = document.querySelectorAll('.progress-fill');
+        progressBars.forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = width;
+            }, 500);
+        });
+    }
+
+    // Barcha guruhlarni yopish
+    function collapseAllGroups() {
+        document.querySelectorAll('.group-card').forEach(group => {
+            group.classList.add('group-collapsed');
+        });
+    }
+
+    // Barcha guruhlarni ochish
+    function expandAllGroups() {
+        document.querySelectorAll('.group-card').forEach(group => {
+            group.classList.remove('group-collapsed');
+        });
+    }
+</script>
+{% endblock %}

@@ -1,94 +1,517 @@
 {% extends 'base.html' %}
 
-{% block title %}Mening Guruhlarim{% endblock %}
+{% block title %}Mening Guruhlarim - EduBase{% endblock %}
 
 {% block content %}
-<div class="py-6">
-  <div class="px-4 sm:px-0">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Mening Guruhlarim</h1>
-    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Sizga biriktirilgan guruhlar va talabalar</p>
-  </div>
+<style>
+    /* Shadcn/ui inspired design tokens */
+    :root {
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 3.9%;
+        --muted: 0 0% 96.1%;
+        --muted-foreground: 0 0% 45.1%;
+        --border: 0 0% 89.8%;
+        --primary: 0 0% 9%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 0 0% 96.1%;
+        --secondary-foreground: 0 0% 9%;
+    }
 
-  {% if groups_with_students %}
-  {% for item in groups_with_students %}
-  <div class="mt-8 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
-    <div class="px-6 py-5">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ item.group.name }}</h3>
-      <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Guruh haqida ma'lumot</p>
+    .dark {
+        --card: 0 0% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --muted: 0 0% 14.9%;
+        --muted-foreground: 0 0% 63.9%;
+        --border: 0 0% 14.9%;
+        --primary: 0 0% 98%;
+        --primary-foreground: 0 0% 9%;
+        --secondary: 0 0% 14.9%;
+        --secondary-foreground: 0 0% 98%;
+    }
+
+    /* Card styles */
+    .card {
+        background-color: hsl(var(--card));
+        color: hsl(var(--card-foreground));
+        border: 1px solid hsl(var(--border));
+    }
+
+    .card-hover {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Text styles */
+    .text-card {
+        color: hsl(var(--card-foreground));
+    }
+
+    .text-muted {
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Avatar styles */
+    .avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    /* Badge styles */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .badge-count {
+        background-color: hsl(var(--primary) / 0.1);
+        color: hsl(var(--primary));
+    }
+
+    /* Info grid styles */
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    @media (min-width: 640px) {
+        .info-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        background-color: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+    }
+
+    .info-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: hsl(var(--muted-foreground));
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .info-value {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: hsl(var(--card-foreground));
+    }
+
+    /* Student list styles */
+    .student-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        background-color: hsl(var(--muted));
+        border: 1px solid hsl(var(--border));
+        transition: all 0.2s ease;
+    }
+
+    .student-item:hover {
+        background-color: hsl(var(--muted) / 0.8);
+        transform: translateX(4px);
+    }
+
+    .student-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex: 1;
+    }
+
+    .student-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .student-name {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: hsl(var(--card-foreground));
+    }
+
+    .student-email {
+        font-size: 0.75rem;
+        color: hsl(var(--muted-foreground));
+    }
+
+    .student-joined {
+        font-size: 0.75rem;
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Empty state styles */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+
+    .empty-state-icon {
+        width: 4rem;
+        height: 4rem;
+        margin: 0 auto 1rem;
+        border-radius: 1rem;
+        background-color: hsl(var(--muted));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Animations */
+    .fade-in {
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .stagger-animation > * {
+        opacity: 0;
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    .stagger-animation > *:nth-child(1) { animation-delay: 0.1s; }
+    .stagger-animation > *:nth-child(2) { animation-delay: 0.2s; }
+    .stagger-animation > *:nth-child(3) { animation-delay: 0.3s; }
+
+    /* Section header */
+    .section-header {
+        border-bottom: 1px solid hsl(var(--border));
+        margin-bottom: 1.5rem;
+    }
+
+    #dashboardLoadingScreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    #dashboardLoadingScreen.hidden {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .spinner-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+    }
+
+    /* Advanced Spinner */
+    .advanced-spinner {
+        width: 68px;
+        height: 68px;
+        display: inline-block;
+        position: relative;
+    }
+
+    .advanced-spinner::after,
+    .advanced-spinner::before {
+        content: '';  
+        box-sizing: border-box;
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        border: 3px solid hsl(var(--primary));
+        position: absolute;
+        left: 0;
+        top: 0;
+        animation: animloader 1.2s linear infinite;
+    }
+
+    .advanced-spinner::before {
+        animation-delay: 0s;
+        border-color: hsl(var(--primary));
+        border-top-color: transparent;
+        border-right-color: transparent;
+    }
+
+    .advanced-spinner::after {
+        animation-delay: 0.6s;
+        border-color: hsl(var(--primary) / 0.5);
+        border-left-color: transparent;
+        border-bottom-color: transparent;
+    }
+
+    @keyframes animloader {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }   
+
+    .loading-text {
+        text-align: center;
+    }
+
+    .loading-text h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 0.25rem;
+    }
+
+    .loading-text p {
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Skeleton Loader */
+    .skeleton {
+        background: linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--border)) 50%, hsl(var(--muted)) 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 0.5rem;
+    }
+
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    .skeleton-stat {
+        height: 120px;
+        border-radius: 1rem;
+    }
+
+    .skeleton-card {
+        height: 200px;
+        border-radius: 1rem;
+    }
+
+    .skeleton-item {
+        height: 60px;
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div id="dashboardLoadingScreen">
+    <div class="loading-container">
+        <div class="spinner-wrapper">
+            <div class="advanced-spinner"></div>
+        </div>
+        <div class="loading-text">
+            <h3>Ma'lumotlar yuklanmoqda</h3>
+            <p>Bir oz kutib turing...</p>
+        </div>
+    </div>
+</div>
+
+<div class="space-y-8 fade-in" id="groupContent">
+    <!-- Header Section -->
+    <div class="space-y-2">
+        <h1 class="text-3xl font-bold tracking-tight text-card">Mening Guruhlarim</h1>
+        <p class="text-muted">Sizga biriktirilgan guruhlar va talabalar</p>
     </div>
 
-    <div class="border-t border-gray-200 dark:border-gray-800">
-      <dl class="divide-y divide-gray-200 dark:divide-gray-800">
-        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
-          <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Tavsif</dt>
-          <dd class="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-            {{ item.group.description|default:"Tavsif mavjud emas" }}</dd>
-        </div>
-        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
-          <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Yaratilgan sana</dt>
-          <dd class="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">{{ item.group.created_at|date:"d.m.Y" }}
-          </dd>
-        </div>
-        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
-          <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Talabalar soni</dt>
-          <dd class="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">{{ item.students.count }}</dd>
-        </div>
-      </dl>
-    </div>
+    {% if groups_with_students %}
+    <!-- Groups List -->
+    <div class="space-y-6 stagger-animation">
+        {% for item in groups_with_students %}
+        <!-- Group Card -->
+        <div class="card rounded-xl p-6 card-hover">
+            <!-- Group Header -->
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex-1">
+                    <h2 class="text-xl font-semibold text-card">{{ item.group.name }}</h2>
+                    <p class="text-muted mt-1">Guruh haqida ma'lumot</p>
+                </div>
+                <span class="badge badge-count">{{ item.students.count }} ta talaba</span>
+            </div>
 
-    <div class="mt-4 px-6 py-5 border-t border-gray-200 dark:border-gray-800">
-      <h4 class="text-md font-medium text-gray-900 dark:text-white mb-4">Talabalar ({{ item.students.count }})</h4>
-      {% if item.students %}
-      <div class="space-y-3">
-        {% for student in item.students %}
-        <div
-          class="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
-          <div class="flex items-center space-x-4">
-            <div class="flex-shrink-0">
-              <div
-                class="h-10 w-10 rounded-full bg-gray-900 dark:bg-white text-white dark:text-black flex items-center justify-center text-sm font-semibold">
-                {{ student.student.first_name|first|upper }}{{ student.student.last_name|first|upper }}
-              </div>
+            <!-- Group Information -->
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Tavsif</span>
+                    <span class="info-value">{{ item.group.description|default:"Tavsif mavjud emas" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Yaratilgan sana</span>
+                    <span class="info-value">{{ item.group.created_at|date:"d.m.Y" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Talabalar soni</span>
+                    <span class="info-value">{{ item.students.count }} ta</span>
+                </div>
             </div>
-            <div>
-              <div class="text-sm font-medium text-gray-900 dark:text-white">
-                {{ student.student.get_full_name|default:student.student.username }}</div>
-              <div class="text-sm text-gray-600 dark:text-gray-400">{{ student.student.email }}</div>
+
+            <!-- Students Section -->
+            <div class="mt-6">
+                <div class="section-header pb-4">
+                    <h3 class="text-lg font-semibold text-card">Talabalar</h3>
+                    <p class="text-muted mt-1">Guruh a'zolari ({{ item.students.count }})</p>
+                </div>
+
+                {% if item.students %}
+                <div class="space-y-3">
+                    {% for student in item.students %}
+                    <div class="student-item fade-in" style=`animation-delay: {{ forloop.counter0|add:2 }}00ms`>
+                        <div class="student-info">
+                            <div class="avatar">
+                                {{ student.student.first_name|first|upper }}{{ student.student.last_name|first|upper }}
+                            </div>
+                            <div class="student-details">
+                                <div class="student-name">
+                                    {{ student.student.get_full_name|default:student.student.username }}
+                                </div>
+                                <div class="student-email">
+                                    {{ student.student.email }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="student-joined">
+                            Qo'shilgan: {{ student.joined_at|date:"d.m.Y" }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-users text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-card mb-2">Guruhda hozircha talabalar yo'q</h3>
+                    <p class="text-muted">Yangi talabalar qo'shilishini kuting</p>
+                </div>
+                {% endif %}
             </div>
-          </div>
-          <div class="text-sm text-gray-600 dark:text-gray-400">
-            Qo'shilgan: {{ student.joined_at|date:"d.m.Y" }}
-          </div>
         </div>
         {% endfor %}
-      </div>
-      {% else %}
-      <div class="text-center py-8">
-        <div class="text-gray-300 dark:text-gray-600 mb-2">
-          <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
+    </div>
+    {% else %}
+    <!-- No Groups State -->
+    <div class="card rounded-xl stagger-animation">
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-user-plus text-xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-card mb-2">Sizga hali guruh tayinlanmagan</h3>
+            <p class="text-muted">Admin sizga guruh tayinlashini kuting.</p>
         </div>
-        <p class="text-gray-600 dark:text-gray-400">Guruhda hozircha talabalar yo'q.</p>
-      </div>
-      {% endif %}
     </div>
-  </div>
-  {% endfor %}
-  {% else %}
-  <div class="mt-8 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm">
-    <div class="px-6 py-12 text-center">
-      <div class="text-gray-300 dark:text-gray-600 mb-4">
-        <svg class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      </div>
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Sizga hali guruh tayinlanmagan</h3>
-      <p class="text-sm text-gray-600 dark:text-gray-400">Admin sizga guruh tayinlashini kuting.</p>
-    </div>
-  </div>
-  {% endif %}
+    {% endif %}
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const loadingScreen = document.getElementById('dashboardLoadingScreen');
+        const groupContent = document.getElementById('groupContent');
+        
+        function hideLoadingScreen() {
+            if (loadingScreen) loadingScreen.classList.add('hidden');
+            if (groupContent) {
+                groupContent.style.opacity = '1';
+                groupContent.style.visibility = 'visible';
+            }
+        }
+
+        let totalImages = 0, loadedImages = 0;
+        const images = document.querySelectorAll('img');
+        totalImages = images.length;
+
+        if (totalImages === 0) {
+            setTimeout(hideLoadingScreen, 300);
+        } else {
+            images.forEach(img => {
+                img.addEventListener('load', () => {
+                    loadedImages++;
+                    if (loadedImages === totalImages) hideLoadingScreen();
+                });
+                img.addEventListener('error', () => {
+                    loadedImages++;
+                    if (loadedImages === totalImages) hideLoadingScreen();
+                });
+            });
+        }
+
+        window.addEventListener('load', hideLoadingScreen);
+        setTimeout(hideLoadingScreen, 2000);
+
+        // Add animations to cards
+        const cards = document.querySelectorAll('.card');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.classList.add('fade-in');
+        });
+
+        // Add hover effects to group cards
+        const groupCards = document.querySelectorAll('.card-hover');
+        groupCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-6px)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(-4px)';
+            });
+        });
+
+        // Add interactive effects to student items
+        const studentItems = document.querySelectorAll('.student-item');
+        studentItems.forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateX(6px)';
+            });
+            
+            item.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateX(4px)';
+            });
+        });
+    });
+</script>
 {% endblock %}

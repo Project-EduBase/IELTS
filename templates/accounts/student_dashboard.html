@@ -4,187 +4,528 @@
 
 {% block content %}
 <style>
-    /* Custom light/dark mode classes for this page */
-    .light .bg-card {
-        background-color: #F7F7F7;
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 0 0% 3.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 3.9%;
+        --muted: 0 0% 96.1%;
+        --muted-foreground: 0 0% 45.1%;
+        --border: 0 0% 89.8%;
+        --primary: 0 0% 9%;
+        --primary-foreground: 0 0% 98%;
+        --radius: 0.75rem;
     }
 
-    .dark .bg-card {
-        background-color: #1A1A1A;
+    .dark {
+        --background: 0 0% 3.9%;
+        --foreground: 0 0% 98%;
+        --card: 0 0% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --muted: 0 0% 14.9%;
+        --muted-foreground: 0 0% 63.9%;
+        --border: 0 0% 14.9%;
+        --primary: 0 0% 98%;
+        --primary-foreground: 0 0% 9%;
     }
 
-    .light .border-card {
-        border-color: #E0E0E0;
+    #dashboardLoadingScreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
     }
 
-    .dark .border-card {
-        border-color: #333333;
+    #dashboardLoadingScreen.hidden {
+        opacity: 0;
+        visibility: hidden;
     }
 
-    .light .text-on-card {
-        color: #000000;
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
     }
 
-    .dark .text-on-card {
-        color: #FFFFFF;
+    .spinner-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
     }
 
-    .light .text-subtle {
-        color: #555555;
+    /* Advanced Spinner */
+    .advanced-spinner {
+        width: 68px;
+        height: 68px;
+        display: inline-block;
+        position: relative;
     }
 
-    .dark .text-subtle {
-        color: #AAAAAA;
+    .advanced-spinner::after,
+    .advanced-spinner::before {
+        content: '';  
+        box-sizing: border-box;
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        border: 3px solid hsl(var(--primary));
+        border-top-color: transparent;
+        border-right-color: transparent;
+        position: absolute;
+        left: 0;
+        top: 0;
+        animation: animloader 1.2s linear infinite;
+    }
+
+    .advanced-spinner::before {
+        animation-delay: 0s;
+        border-color: hsl(var(--primary));
+        border-right-color: transparent;
+        border-bottom-color: transparent;
+    }
+
+    .advanced-spinner::after {
+        animation-delay: 0.6s;
+        border-color: hsl(var(--primary) / 0.5);
+        border-left-color: transparent;
+        border-bottom-color: transparent;
+    }
+
+    @keyframes animloader {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }   
+
+    .loading-text {
+        text-align: center;
+    }
+
+    .loading-text h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        margin-bottom: 0.25rem;
+    }
+
+    .loading-text p {
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Skeleton Loader */
+    .skeleton {
+        background: linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--border)) 50%, hsl(var(--muted)) 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 0.5rem;
+    }
+
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    .skeleton-stat {
+        height: 120px;
+        border-radius: 1rem;
+    }
+
+    .skeleton-card {
+        height: 200px;
+        border-radius: 1rem;
+    }
+
+    .skeleton-item {
+        height: 60px;
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    * {
+        border-color: hsl(var(--border));
+    }
+
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    .card {
+        background-color: hsl(var(--card));
+        color: hsl(var(--card-foreground));
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        transition: all 0.25s ease;
+    }
+
+    .card-hover {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 28px -6px hsl(var(--foreground) / 0.12);
+    }
+
+    .text-muted { color: hsl(var(--muted-foreground)); }
+    .text-primary { color: hsl(var(--primary)); }
+
+    .btn-primary {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        padding: 0.5rem 1rem;
+        border-radius: calc(var(--radius) - 0.25rem);
+        font-weight: 600;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .btn-primary:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+
+    .btn-outline {
+        border: 1px solid hsl(var(--border));
+        color: hsl(var(--card-foreground));
+        padding: 0.5rem 1rem;
+        border-radius: calc(var(--radius) - 0.25rem);
+        font-weight: 500;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    .btn-outline:hover {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    .badge-completed { background: hsl(142 76% 36% / 0.1); color: hsl(142 76% 36%); }
+    .badge-pending   { background: hsl(45 93% 47% / 0.1);  color: hsl(45 93% 47%); }
+    .badge-review    { background: hsl(217 91% 60% / 0.1); color: hsl(217 91% 60%); }
+
+    .score-badge {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+    .empty-state-icon {
+        width: 4rem; height: 4rem; margin: 0 auto 1rem;
+        border-radius: 1rem; background: hsl(var(--muted));
+        display: flex; align-items: center; justify-content: center;
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Pulse Loader (Login sahifasidan) */
+    .loader-pulse {
+        width: 16px; height: 16px; border-radius: 50%;
+        background: currentColor; position: relative;
+    }
+    .loader-pulse::after {
+        content: ''; position: absolute; inset: 0;
+        border-radius: 50%; background: currentColor;
+        animation: pulse 1s ease-in-out infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(0.9); opacity: 1; }
+        100% { transform: scale(2.5); opacity: 0; }
+    }
+
+    /* Fade In */
+    .fade-in {
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .stagger > * {
+        opacity: 0;
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+    .stagger > *:nth-child(1) { animation-delay: 0.1s; }
+    .stagger > *:nth-child(2) { animation-delay: 0.2s; }
+    .stagger > *:nth-child(3) { animation-delay: 0.3s; }
+    .stagger > *:nth-child(4) { animation-delay: 0.4s; }
+
+    /* Content visibility */
+    .dashboard-content {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .dashboard-content.loaded {
+        opacity: 1;
+        visibility: visible;
     }
 </style>
 
-<div class="space-y-8">
-    <div>
-        <h1 class="font-sans text-3xl font-bold tracking-tight text-text-on-card">Salom, {{ user.get_full_name|default:user.username }}!</h1>
-        <p class="mt-2 text-subtle">Talaba paneli</p>
-    </div>
-
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="bg-card border border-card rounded-xl p-6 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-            <div class="flex items-center space-x-4">
-                <div class="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                    <i class="fas fa-clipboard-list text-text-on-card text-lg"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-subtle">Jami urinishlar</p>
-                    <p class="text-2xl font-bold text-text-on-card">{{ total_attempts }}</p>
-                </div>
-            </div>
+<!-- Loading Screen -->
+<div id="dashboardLoadingScreen">
+    <div class="loading-container">
+        <div class="spinner-wrapper">
+            <div class="advanced-spinner"></div>
         </div>
-
-        <div class="bg-card border border-card rounded-xl p-6 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-            <div class="flex items-center space-x-4">
-                <div class="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                    <i class="fas fa-check-circle text-text-on-card text-lg"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-subtle">Tugallangan</p>
-                    <p class="text-2xl font-bold text-text-on-card">{{ completed_attempts }}</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-card border border-card rounded-xl p-6 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-            <div class="flex items-center space-x-4">
-                <div class="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                    <i class="fas fa-star text-text-on-card text-lg"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-subtle">O'rtacha ball</p>
-                    <p class="text-2xl font-bold text-text-on-card">{{ avg_score }}</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-card border border-card rounded-xl p-6 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-            <div class="flex items-center space-x-4">
-                <div class="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                    <i class="fas fa-users text-text-on-card text-lg"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-subtle">Guruh</p>
-                    <p class="text-2xl font-bold text-text-on-card">{% if student_group %}{{ student_group.name }}{% else %}-{% endif %}</p>
-                </div>
-            </div>
+        <div class="loading-text">
+            <h3>Ma'lumotlar yuklanmoqda</h3>
+            <p>Bir oz kutib turing...</p>
         </div>
     </div>
+</div>
 
-    <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        <div class="bg-card border border-card rounded-xl overflow-hidden">
-            <div class="px-6 py-5 border-b border-card">
-                <h3 class="font-sans text-lg font-semibold text-text-on-card">Mavjud testlar</h3>
-                <p class="mt-1 text-sm text-subtle">Sizga tayinlangan testlar</p>
+
+<div class="max-w-7xl mx-auto p-6 space-y-8 fade-in dashboard-content" id="dashboardContent">
+
+    <!-- Header -->
+    <div class="space-y-2">
+        <h1 class="text-3xl font-extrabold text-foreground">Salom, {{ user.get_full_name|default:user.username }}!</h1>
+        <p class="text-muted">Talaba paneli • Bugun nima qilmoqchisiz?</p>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger" id="statsGrid">
+        <div class="card rounded-2xl p-6 card-hover">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+                    <i class="fas fa-clipboard-list text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-muted">Jami urinishlar</p>
+                    <p class="text-2xl font-bold text-foreground mt-1">{{ total_attempts|default:"0" }}</p>
+                </div>
             </div>
-            <div class="p-6">
+        </div>
+
+        <div class="card rounded-2xl p-6 card-hover">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+                    <i class="fas fa-check-circle text-lg text-green-600 dark:text-green-400"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-muted">Tugallangan</p>
+                    <p class="text-2xl font-bold text-foreground mt-1">{{ completed_attempts|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card rounded-2xl p-6 card-hover">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+                    <i class="fas fa-star text-lg text-yellow-600 dark:text-yellow-400"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-muted">O'rtacha ball</p>
+                    <p class="text-2xl font-bold text-foreground mt-1">{{ avg_score|floatformat:1|default:"—" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card rounded-2xl p-6 card-hover">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+                    <i class="fas fa-users text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-muted">Guruh</p>
+                    <p class="text-xl font-bold text-foreground mt-1 truncate">
+                        {% if student_group %}{{ student_group.name }}{% else %}—{% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- Available Exams -->
+        <div class="card rounded-2xl overflow-hidden">
+            <div class="px-6 py-5 border-b border-border">
+                <h3 class="text-lg font-semibold text-foreground">Mavjud testlar</h3>
+                <p class="text-sm text-muted mt-1">Sizga tayinlangan testlar</p>
+            </div>
+            <div class="p-6 space-y-4" id="availableExams">
                 {% if available_exams %}
-                <div class="space-y-4">
                     {% for assignment in available_exams %}
-                    <div class="flex items-center justify-between p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-card/50 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <div class="flex items-center justify-between p-4 bg-muted/50 rounded-xl border border-border/50 card-hover group">
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-text-on-card truncate">{{ assignment.exam.title }}</p>
-                            <p class="text-xs text-subtle mt-1">{{ assignment.exam.get_section_type_display }}</p>
+                            <p class="text-sm font-medium text-foreground truncate">{{ assignment.exam.title }}</p>
+                            <p class="text-xs text-muted mt-1">{{ assignment.exam.get_section_type_display }}</p>
                         </div>
                         <a href="{% url 'exam_detail' assignment.exam.id %}"
-                            class="inline-flex items-center px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black text-xs font-medium rounded-lg hover:opacity-80 transition-all focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white">
+                           class="btn-primary text-xs px-3 py-1.5 rounded-lg group-hover:scale-105 transition-transform">
                             Ko'rish
                         </a>
                     </div>
                     {% endfor %}
-                </div>
-                {% if available_exams_count %}
-                <div class="mt-6 text-center">
-                    <a href="{% url 'exam_list' %}" class="inline-flex items-center px-4 py-2 bg-transparent text-text-on-card border border-text-on-card/50 rounded-lg text-sm font-medium hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors">
-                        Hammasini ko'rish
-                    </a>
-                </div>
-                {% endif %}
-                {% else %}
-                <div class="text-center py-8">
-                    <div class="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4 bg-gray-200 dark:bg-gray-700">
-                        <i class="fas fa-book-open text-gray-500 dark:text-gray-400 text-xl"></i>
+                    {% if available_exams_count > 3 %}
+                    <div class="text-center mt-4">
+                        <a href="{% url 'exam_list' %}" class="btn-outline text-sm px-4 py-2 rounded-lg">
+                            Hammasini ko'rish ({{ available_exams_count }})
+                        </a>
                     </div>
-                    <p class="text-subtle">Hozircha mavjud testlar yo'q.</p>
-                </div>
+                    {% endif %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-book-open text-xl"></i></div>
+                        <p class="text-muted">Hozircha mavjud testlar yo'q.</p>
+                    </div>
                 {% endif %}
             </div>
         </div>
 
-        <div class="bg-card border border-card rounded-xl overflow-hidden">
-            <div class="px-6 py-5 border-b border-card">
-                <h3 class="font-sans text-lg font-semibold text-text-on-card">So'nggi urinishlar</h3>
-                <p class="mt-1 text-sm text-subtle">Sizning so'nggi test urinishlaringiz</p>
+        <!-- Recent Attempts -->
+        <div class="card rounded-2xl overflow-hidden">
+            <div class="px-6 py-5 border-b border-border">
+                <h3 class="text-lg font-semibold text-foreground">So'nggi urinishlar</h3>
+                <p class="text-sm text-muted mt-1">Sizning so'nggi test urinishlaringiz</p>
             </div>
-            <div class="p-6">
+            <div class="p-6 space-y-4" id="recentAttempts">
                 {% if student_attempts %}
-                <div class="space-y-4">
                     {% for attempt in student_attempts %}
-                    <div class="flex items-center justify-between p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-card/50 transition-colors">
+                    <div class="flex items-center justify-between p-4 bg-muted/50 rounded-xl border border-border/50 card-hover group">
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-text-on-card truncate">{{ attempt.exam.title }}</p>
-                            <div class="flex items-center space-x-2 mt-1">
-                                <p class="text-xs text-subtle">{{ attempt.created_at|date:"d.m.Y H:i" }}</p>
-                                <span class="text-xs text-subtle">•</span>
+                            <p class="text-sm font-medium text-foreground truncate">{{ attempt.exam.title }}</p>
+                            <div class="flex items-center gap-2 mt-1 text-xs text-muted">
+                                <span>{{ attempt.created_at|date:"d.m.Y H:i" }}</span>
+                                <span>•</span>
                                 {% if attempt.status == 'completed' %}
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-200 text-green-800 dark:bg-green-700 dark:text-green-200">Tugallangan</span>
+                                    <span class="badge badge-completed">Tugallangan</span>
                                 {% elif attempt.status == 'submitted' %}
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-200 text-blue-800 dark:bg-blue-700 dark:text-blue-200">Tekshirilmoqda</span>
+                                    <span class="badge badge-review">Tekshirilmoqda</span>
                                 {% else %}
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-200 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-200">Jarayonda</span>
+                                    <span class="badge badge-pending">Jarayonda</span>
                                 {% endif %}
                             </div>
                         </div>
                         {% if attempt.total_score %}
-                        <div class="ml-4 flex-shrink-0">
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-sm font-medium bg-black text-white dark:bg-white dark:text-black">
-                                {{ attempt.total_score }}
-                            </span>
-                        </div>
+                        <div class="score-badge">{{ attempt.total_score }}</div>
                         {% endif %}
                     </div>
                     {% endfor %}
-                </div>
-                {% if student_attempts_count %}
-                <div class="mt-6 text-center">
-                    <a href="{% url 'my_attempts' %}" class="inline-flex items-center px-4 py-2 bg-transparent text-text-on-card border border-text-on-card/50 rounded-lg text-sm font-medium hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors">
-                        Hammasini ko'rish
-                    </a>
-                </div>
-                {% endif %}
-                {% else %}
-                <div class="text-center py-8">
-                    <div class="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4 bg-gray-200 dark:bg-gray-700">
-                        <i class="fas fa-history text-gray-500 dark:text-gray-400 text-xl"></i>
+                    {% if student_attempts_count > 3 %}
+                    <div class="text-center mt-4">
+                        <a href="{% url 'attempts:my_attempts' %}" class="btn-outline text-sm px-4 py-2 rounded-lg">
+                            Hammasini ko'rish ({{ student_attempts_count }})
+                        </a>
                     </div>
-                    <p class="text-subtle">Hozircha urinishlar yo'q.</p>
-                </div>
+                    {% endif %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-history text-xl"></i></div>
+                        <p class="text-muted">Hozircha urinishlar yo'q.</p>
+                    </div>
                 {% endif %}
             </div>
         </div>
+
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Loading bo'limini ko'rsatish
+        const loadingScreen = document.getElementById('dashboardLoadingScreen');
+        const dashboardContent = document.getElementById('dashboardContent');
+        
+        function hideLoadingScreen() {
+            if (loadingScreen) {
+                loadingScreen.classList.add('hidden');
+            }
+            if (dashboardContent) {
+                dashboardContent.classList.add('loaded');
+            }
+        }
+
+        // API rejectlarini qilish (agar data loadingni kechiktirish kerak bo'lsa)
+        // const simulatedDelay = setTimeout(() => {
+        //     hideLoadingScreen();
+        // }, 2000);
+
+        // Actual loading simulatsiya
+        // Barcha tasvirlar yuklanmaguncha kuting
+        let totalImages = 0;
+        let loadedImages = 0;
+
+        const images = document.querySelectorAll('#dashboardContent img');
+        totalImages = images.length;
+
+        if (totalImages === 0) {
+            // Agar tasvirlar bo'lmasa, darhol yuklanganini ko'rsatish
+            setTimeout(hideLoadingScreen, 300);
+        } else {
+            // Tasvirlar yuklanmani kuzatish
+            images.forEach(img => {
+                img.addEventListener('load', () => {
+                    loadedImages++;
+                    if (loadedImages === totalImages) {
+                        hideLoadingScreen();
+                    }
+                });
+                img.addEventListener('error', () => {
+                    loadedImages++;
+                    if (loadedImages === totalImages) {
+                        hideLoadingScreen();
+                    }
+                });
+            });
+        }
+
+        // Window load event ham
+        window.addEventListener('load', hideLoadingScreen);
+
+        // Maksimal 2 soniyadan keyin loading yoq bo'lsin (xavfsizlik)
+        setTimeout(hideLoadingScreen, 2000);
+
+        // Card hover animatsiyalari
+        const stats = document.querySelectorAll('#statsGrid > div');
+        stats.forEach((el, i) => {
+            el.style.animationDelay = `${i * 0.1}s`;
+            el.classList.add('fade-in');
+        });
+
+        const hoverCards = document.querySelectorAll('.card-hover');
+        hoverCards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-4px)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = '';
+            });
+        });
+    });
+</script>
 {% endblock %}
